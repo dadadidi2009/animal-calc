@@ -34,7 +34,7 @@
     <!-- メインコンテンツ -->
     <main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6 flex-grow w-full">
 
-        <!-- 🔍 リアルタイムJSON読込チェッカー（強化バナー） -->
+        <!-- 🔍 リアルタイムJSON読込チェッカー -->
         <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-3">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -177,12 +177,13 @@
         const fileStatusGrid = document.getElementById('fileStatusGrid');
         const bannerEmoji = document.getElementById('bannerEmoji');
 
-        // --- 起動時に 8つの JSON ファイルを非同期並行ロードして自動マージ ＆ 画面可視化 ---
+        // --- 起動時に 8つの JSON ファイルを非同期並行ロードして自動マージ ---
         async function loadAllCardLists() {
+            // ★ご提示いただいた、大文字・小文字、日本語を含む正確なファイルリスト
             const fileNames = [
-                'AGC1第１弾.json',   // 任意の名前に変更
+                'AGC1第１弾.json',
                 'AGC2第２弾.json',
-                'BP1種属戦争.json',   // 規則性がない名前でもOK！
+                'BP1種属戦争.json',
                 'BP2運命の物語.json',
                 'BP3青嵐再来.json',
                 'BP4適者生存.json',
@@ -194,7 +195,7 @@
             fileStatusGrid.innerHTML = fileNames.map((file, idx) => `
                 <div id="status-${idx}" class="flex items-center gap-2 bg-slate-950 p-2 rounded-lg border border-slate-800 text-slate-500">
                     <span class="w-2.5 h-2.5 rounded-full bg-slate-700 animate-pulse"></span>
-                    <span class="font-mono">${file} (読込中)</span>
+                    <span class="font-mono text-[10px] truncate max-w-[130px]">${file} (読込中)</span>
                 </div>
             `).join('');
 
@@ -205,7 +206,7 @@
                 const statusDiv = document.getElementById(`status-${idx}`);
                 const dot = statusDiv.querySelector('span');
 
-                return fetch(file)
+                return fetch(encodeURIComponent(file)) // ★日本語ファイル名用にURLエンコード
                     .then(res => {
                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
                         return res.json();
@@ -214,7 +215,6 @@
                         loadedCount++;
                         loadProgressCount.textContent = `${loadedCount} / 8 files`;
                         
-                        // 読込成功：緑色に点灯
                         statusDiv.classList.remove('text-slate-500', 'border-slate-800');
                         statusDiv.classList.add('text-emerald-400', 'border-emerald-500/20', 'bg-emerald-950/10');
                         dot.classList.remove('bg-slate-700', 'animate-pulse');
@@ -228,7 +228,6 @@
                         loadedCount++;
                         loadProgressCount.textContent = `${loadedCount} / 8 files`;
                         
-                        // 読込失敗：赤色に点灯
                         statusDiv.classList.remove('text-slate-500', 'border-slate-800');
                         statusDiv.classList.add('text-rose-400', 'border-rose-500/20', 'bg-rose-950/10');
                         dot.classList.remove('bg-slate-700', 'animate-pulse');
@@ -236,7 +235,7 @@
                         
                         let errorMsg = '読込失敗';
                         if (window.location.protocol === 'file:') {
-                            errorMsg = 'ローカル制限'; // file:// 制約
+                            errorMsg = 'ローカル制限';
                         } else {
                             errorMsg = err.message.includes('404') ? '404なし' : 'JSONエラー';
                         }
@@ -275,33 +274,61 @@
 
         window.addEventListener('DOMContentLoaded', loadAllCardLists);
 
-        // --- デッキ読み込み処理 ---
+        // --- 壊れた不完全なJSONを自動で修復して読み込む救済パースロジック ---
+        function robustJsonParse(text) {
+            const trimmed = text.trim();
+            try {
+                return JSON.parse(trimmed);
+            } catch (firstError) {
+                console.warn("JSONの標準パースに失敗しました。カッコ修復処理を試みます...", firstError.message);
+                
+                let openBraces = (trimmed.match(/{/g) || []).length;
+                let closeBraces = (trimmed.match(/}/g) || []).length;
+                
+                if (openBraces > closeBraces) {
+                    let repairedText = trimmed + '}'.repeat(openBraces - closeBraces);
+                    try {
+                        const parsed = JSON.parse(repairedText);
+                        console.log("✅ カッコを補完して無事JSONのロードに成功しました！");
+                        return parsed;
+                    } catch (secondError) {
+                        throw new Error("カッコを自動補完しましたがパースできませんでした。JSONファイルのフォーマット（カンマの過不足など）を再確認してください。");
+                    }
+                }
+                throw firstError;
+            }
+        }
+
+        // --- デッキ読み込み処理 (FileListバグ修正済) ---
         deckFileInput.addEventListener('change', (e) => {
-            const file = e.target.files;
-            if (!file) return;
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+            const file = files; 
 
             const reader = new FileReader();
             reader.onload = function(evt) {
                 try {
-                    const parsed = JSON.parse(evt.target.result);
+                    const parsed = robustJsonParse(evt.target.result); 
                     deckJsonInput.value = JSON.stringify(parsed, null, 2);
                     executeImport(parsed);
                 } catch (err) {
-                    alert('ファイル形式（JSON）が正しくありません。\n' + err.message);
+                    alert('デッキJSONの読み込みに失敗しました。ファイル形式に問題があります。\n\n詳細: ' + err.message);
                 }
             };
-            reader.readAsText(file);
+            reader.readAsText(file); 
         });
 
         importBtn.addEventListener('click', () => {
             try {
-                const parsed = JSON.parse(deckJsonInput.value || '{}');
+                const parsed = robustJsonParse(deckJsonInput.value || '{}'); 
+                deckJsonInput.value = JSON.stringify(parsed, null, 2);
                 executeImport(parsed);
             } catch (err) {
-                alert('JSONテキストの解析に失敗しました。括弧やカンマの不整合がないか確認してください。');
+                alert('JSONテキストの解析に失敗しました。カッコやカンマの不整合がないか確認してください。\n\n詳細: ' + err.message);
             }
         });
 
+        // 変換ロジック (例: "20" -> "ACG-020", "8015" -> "ACG-8015")
         function formatCardId(rawId) {
             const num = parseInt(rawId, 10);
             if (isNaN(num)) return rawId;
@@ -396,7 +423,7 @@
                             </div>
                             <div class="space-y-1 text-slate-300">
                                 <p><span class="text-slate-500">タイプ:</span> ${card.type} 【${card.species || 'なし'}】</p>
-                                <p><span class="text-slate-500">条件/コスト:</span> [${card.conditions || '無'}] / ${card.cost}エネ</p>
+                                <p><span class="text-slate-500">条件:</span> [${card.conditions || '無'}] / ${card.cost}エネ</p>
                                 <div class="mt-2 pt-2 border-t border-slate-800 text-[10px] text-slate-400 leading-relaxed max-h-24 overflow-y-auto">
                                     ${card.abilities ? card.abilities.join('<br>') : '効果なし'}
                                 </div>
@@ -473,7 +500,7 @@
             return array;
         }
 
-        // 2色領土最適割り振り
+        // 2色領土の自動最適割り振り
         function canSatisfyConditions(requiredConditions, availableLands) {
             if (requiredConditions.length === 0) return true;
             if (availableLands.length < requiredConditions.length) return false;
@@ -519,6 +546,7 @@
             return needed;
         }
 
+        // --- シミュレーションコア ---
         runSimulationBtn.addEventListener('click', () => {
             const runs = parseInt(simRunsSelect.value, 10);
             const mustIds = Object.entries(state.conditions).filter(([_, type]) => type === 'must').map(([id]) => id);
