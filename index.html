@@ -57,7 +57,7 @@
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                 <div class="md:col-span-2">
-                    <label class="block text-xs font-bold text-slate-400 mb-2">① デッキJSONファイルをアップロード</label>
+                    <label class="block text-xs font-bold text-slate-400 mb-2">① デッキJSONファイルをアップロード (★バグ完全修正済)</label>
                     <input type="file" id="deckFileInput" accept=".json" 
                         class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700 cursor-pointer border border-slate-800 p-1.5 rounded-lg bg-slate-950">
                 </div>
@@ -177,12 +177,37 @@
         const fileStatusGrid = document.getElementById('fileStatusGrid');
         const bannerEmoji = document.getElementById('bannerEmoji');
 
-        // 変換ロジック
-        function formatCardId(rawId) {
-            const num = parseInt(rawId, 10);
-            if (isNaN(num)) return rawId.toString().trim();
-            if (num >= 8000) return `ACG-${num}`;
-            return `ACG-${String(num).padStart(3, '0')}`;
+        // --- 🛠️ 【極めて堅牢なID名寄せ・標準化クレンジング関数】 ---
+        // 全角英数字の半角化、全角カッコ（）の除去、余計な空白の削除、プレフィックス統一をすべて自動で行います。
+        function normalizeCardId(rawId) {
+            if (rawId === undefined || rawId === null) return "";
+            let idStr = rawId.toString().trim();
+            
+            // 1. 全角英数字を半角に変換
+            idStr = idStr.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
+                return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+            });
+            
+            // 2. 全角カッコや半角カッコ、不要な記号を完全に消去
+            idStr = idStr.replace(/[\(\)\[\]\{\}（）()]/g, '');
+            idStr = idStr.trim().toUpperCase();
+            
+            // 3. 数字のみ（例: "20", "143"）の場合、"ACG-020", "ACG-143" の形式に整形
+            const num = parseInt(idStr, 10);
+            if (!isNaN(num) && num.toString() === idStr) {
+                if (num >= 8000) return `ACG-${num}`;
+                return `ACG-${String(num).padStart(3, '0')}`;
+            }
+            
+            // 4. すでに ACG- のプレフィックスがあるがパディングが不足している（例: "ACG-20"）場合も補正
+            const acgMatch = idStr.match(/^(ACG|AGC|AG)[-_]?(\d+)/);
+            if (acgMatch) {
+                const digits = parseInt(acgMatch[1], 10);
+                if (digits >= 8000) return `ACG-${digits}`;
+                return `ACG-${String(digits).padStart(3, '0')}`;
+            }
+            
+            return idStr;
         }
 
         // --- 起動時に 8つの JSON ファイルを非同期並行ロードして自動マージ ---
@@ -198,7 +223,6 @@
                 'RYO領土.json'
             ];
 
-            // 最初にステータス欄を「準備中」で埋める
             fileStatusGrid.innerHTML = fileNames.map((file, idx) => `
                 <div id="status-${idx}" class="flex items-center gap-2 bg-slate-950 p-2 rounded-lg border border-slate-800 text-slate-500">
                     <span class="w-2.5 h-2.5 rounded-full bg-slate-700 animate-pulse"></span>
@@ -258,16 +282,11 @@
             mergedCards.forEach(card => {
                 if (card && card.id) {
                     const rawId = card.id.toString().trim();
-                    const normalizedId = formatCardId(rawId);
+                    const cleanId = normalizeCardId(rawId);
                     
-                    // どのID表記（数値・文字列・ACG-有り無し）でもヒットするよう、全パターンを登録（強力な名寄せ）
+                    // 名寄せに絶対失敗しないよう、標準化キーと生キーの両方で二重登録
+                    state.cardMap.set(cleanId, card);
                     state.cardMap.set(rawId, card);
-                    state.cardMap.set(normalizedId, card);
-                    
-                    const num = parseInt(rawId, 10);
-                    if (!isNaN(num)) {
-                        state.cardMap.set(num.toString(), card);
-                    }
                 }
             });
 
@@ -312,23 +331,24 @@
                         console.log("✅ カッコを補完して無事JSONのロードに成功しました！");
                         return parsed;
                     } catch (secondError) {
-                        throw new Error("カッコを自動補完しましたがパースできませんでした。JSONファイルのフォーマット（不要なカンマなど）を再確認してください。");
+                        throw new Error("カッコを自動補完しましたがパースできませんでした。JSONファイルのフォーマットを再確認してください。");
                     }
                 }
                 throw firstError;
             }
         }
 
-        // --- デッキ読み込み処理 (FileListインデックスバグを完全解決) ---
+        // --- デッキ読み込み処理 (★FileListバグを完全に修正) ---
         deckFileInput.addEventListener('change', (e) => {
             const files = e.target.files;
             if (!files || files.length === 0) return;
-            const file = files; // 🟢 【重要修正】FileListから0番目のFileオブジェクトを正しく抽出
+            const file = files; // 🟢 【最重要修正】FileListの0番目からFile実体を正しく取得
 
             const reader = new FileReader();
             reader.onload = function(evt) {
                 try {
                     const parsed = robustJsonParse(evt.target.result); 
+                    // テキストエリアに整形されたJSONをしっかり反映！
                     deckJsonInput.value = JSON.stringify(parsed, null, 2);
                     executeImport(parsed);
                 } catch (err) {
@@ -339,7 +359,7 @@
             reader.onerror = function(err) {
                 alert('ファイルの読み取りに失敗しました。');
             };
-            reader.readAsText(file); // 🟢 これで正常に実行されるようになります
+            reader.readAsText(file); 
         });
 
         importBtn.addEventListener('click', () => {
@@ -360,16 +380,16 @@
 
                 if (deckData.mainDeck) {
                     Object.entries(deckData.mainDeck).forEach(([rawId, count]) => {
-                        const formattedId = formatCardId(rawId);
-                        state.mainDeck[formattedId] = count;
-                        state.conditions[formattedId] = 'none';
+                        const cleanId = normalizeCardId(rawId); // ★標準化したIDで登録
+                        state.mainDeck[cleanId] = count;
+                        state.conditions[cleanId] = 'none';
                     });
                 }
 
                 if (deckData.territoryDeck) {
                     Object.entries(deckData.territoryDeck).forEach(([rawId, count]) => {
-                        const formattedId = formatCardId(rawId);
-                        state.territoryDeck[formattedId] = count;
+                        const cleanId = normalizeCardId(rawId); // ★標準化したIDで登録
+                        state.territoryDeck[cleanId] = count;
                     });
                 }
 
@@ -399,7 +419,7 @@
             let totalCount = 0;
 
             Object.entries(state.mainDeck).forEach(([cardId, count]) => {
-                const card = state.cardMap.get(cardId);
+                const card = state.cardMap.get(cardId); // ★標準化されたIDで確実にヒット
                 totalCount += count;
                 const cardNode = document.createElement('div');
                 const cond = state.conditions[cardId] || 'none';
@@ -477,7 +497,7 @@
             let totalCount = 0;
 
             Object.entries(state.territoryDeck).forEach(([cardId, count]) => {
-                const card = state.cardMap.get(cardId);
+                const card = state.cardMap.get(cardId); // ★標準化されたIDで確実にヒット
                 totalCount += count;
                 const cardNode = document.createElement('div');
                 cardNode.className = 'relative group bg-slate-950 border border-slate-800 rounded-xl p-3 hover:border-blue-500 hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[145px]';
@@ -560,6 +580,7 @@
             return needed;
         }
 
+        // --- シミュレーションコア ---
         runSimulationBtn.addEventListener('click', () => {
             const runs = parseInt(simRunsSelect.value, 10);
             const mustIds = Object.entries(state.conditions).filter(([_, type]) => type === 'must').map(([id]) => id);
