@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アニマルカードゲーム Web確率計算機 ver 0.2608200536</title>
+    <title>アニマルカードゲーム Web確率計算機 ver 0.2608201200</title>
     <!-- Tailwind CSS & Chart.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -25,7 +25,7 @@
             <h1 class="text-xl font-bold text-emerald-400 flex items-center gap-2">
                 🐾 アニマルカードゲーム Web確率計算機
                 <span class="text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono">
-                    ver 0.2608200536
+                    ver 0.2608201200
                 </span>
             </h1>
             <span class="text-xs bg-slate-800 text-slate-400 px-3 py-1 rounded-full border border-slate-700 font-mono">
@@ -55,9 +55,19 @@
 
         <!-- 1. デッキインポートエリア -->
         <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
-            <h2 class="text-base font-bold text-emerald-300 flex items-center gap-2">
-                📥 デッキJSONの読み込み
-            </h2>
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h2 class="text-base font-bold text-emerald-300 flex items-center gap-2">
+                    📥 デッキJSONの読み込み
+                </h2>
+                <!-- 🟢 【②のご提案】詳細表示切り替えチェックボックス新設 -->
+                <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                    <input type="checkbox" id="showDetailedCheck" class="w-4 h-4 rounded text-emerald-500 bg-slate-900 border-slate-800 focus:ring-emerald-500 focus:ring-offset-slate-950 cursor-pointer">
+                    <label for="showDetailedCheck" class="text-xs font-bold text-slate-300 cursor-pointer select-none">
+                        👁️ 全カードの詳細・能力テキストを表示
+                    </label>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
                 <div class="md:col-span-2 flex flex-col sm:flex-row gap-3 items-end">
                     <div class="flex-grow w-full">
@@ -65,12 +75,13 @@
                         <input type="file" id="deckFileInput" accept=".json" 
                             class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700 cursor-pointer border border-slate-800 p-1.5 rounded-lg bg-slate-950">
                     </div>
+                    <!-- 🟢 【③のご提案】テキスト化して表示することに特化した、完全に独立した読込ボタン -->
                     <button id="loadTextBtn" class="w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg border border-slate-700 transition-all text-xs h-[38px] whitespace-nowrap">
-                        📄 ファイルのテキストを読み込む
+                        📄 ファイルをテキスト読込する
                     </button>
                 </div>
                 <div class="w-full">
-                    <label class="block text-xs font-bold text-slate-400 mb-2">またはテキスト直接貼り付け (②)</label>
+                    <label class="block text-xs font-bold text-slate-400 mb-2">貼り付け欄 / テキスト表示ボックス</label>
                     <textarea id="deckJsonInput" rows="1" 
                         class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs font-mono text-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 h-[38px] resize-none"
                         placeholder='{"mainDeck": {"20": 2}}'></textarea>
@@ -185,8 +196,17 @@
         const loadProgressCount = document.getElementById('loadProgressCount');
         const fileStatusGrid = document.getElementById('fileStatusGrid');
         const bannerEmoji = document.getElementById('bannerEmoji');
+        const showDetailedCheck = document.getElementById('showDetailedCheck');
 
-        // --- 🛠️ 【表記揺れ標準キー変換】（ match[1] / match[2] バグ完全修正済） ---
+        // トグル切り替え時に再描画を走らせる
+        showDetailedCheck.addEventListener('change', () => {
+            if (Object.keys(state.mainDeck).length > 0) {
+                renderMainDeck();
+                renderTerritoryDeck();
+            }
+        });
+
+        // --- 🛠️ 【表記揺れ標準キー変換】 ---
         function normalizeCardListId(rawId) {
             if (rawId === undefined || rawId === null) return "";
             let s = rawId.toString().trim();
@@ -204,18 +224,24 @@
             // プレフィックスとカード番号を抽出
             const match = s.match(/^(ACG|BP\d|BP|RYO)[-_]?(\d+)/i);
             if (match) {
-                const prefix = match[1].toUpperCase(); // 🟢 プレフィックス文字列を正しく取得
-                const num = parseInt(match[2], 10);     // 🟢 番号部分の数値を正しく取得
+                const prefix = match[1].toUpperCase(); 
+                const num = parseInt(match[2], 10);     
                 return `${prefix}-${num}`;
             }
             return s.toUpperCase();
         }
 
-        // --- 🛠️ 【デッキ側数値IDからのデコード】 ---
+        // --- 🛠️ 【デッキ側数値IDからのデコード（誤登録バグ補正機能付き）】 ---
         function normalizeDeckId(rawId) {
-            const num = parseInt(rawId, 10);
+            let num = parseInt(rawId, 10);
             if (isNaN(num)) {
                 return normalizeCardListId(rawId);
+            }
+
+            // 🟢 【④のご提案】デッキ構築サイトのバグ救済。ACG-038が039として誤出力される問題を自動補正
+            if (num === 39) {
+                console.log("🛠️ ワークアラウンド適用: ID 39 を ACG-038 (妖狐の巻物) に自動補正しました。");
+                num = 38;
             }
 
             if (num >= 8000 && num < 9000) {
@@ -357,20 +383,30 @@
             }
         }
 
-        // --- 🛠️ 【③ バグ切り分け：ファイル読込ボタンに処理を完全独立】 ---
+        // --- 🟢 【①＆③のご提案】ファイルをアップロードした際に、テキスト読み込みをする処理の完全確実化 ---
         let selectedFile = null;
         
-        // ファイルの選択を監視するだけ
+        // ファイルの選択を検知
         deckFileInput.addEventListener('change', (e) => {
             const files = e.target.files;
             if (files && files.length > 0) {
-                selectedFile = files; // 🟢 FileListから1つのFileオブジェクトを確実に取得
+                selectedFile = files; // 🟢 FileListから安全に0番目のFileオブジェクトを取得
+
+                // ファイルを選択した瞬間に、自動でテキストエリアに中身を転記する
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    deckJsonInput.value = evt.target.result;
+                };
+                reader.onerror = function() {
+                    console.error("ファイルの自動転記に失敗しました。");
+                };
+                reader.readAsText(selectedFile);
             } else {
                 selectedFile = null;
             }
         });
 
-        // テキスト読込ボタン押下で初めてテキストエリアにロードする
+        // 「📄 ファイルをテキスト読込する」ボタン押下でも動作するように完全独立
         loadTextBtn.addEventListener('click', () => {
             if (!selectedFile) {
                 alert("ファイルが選択されていません。先に「ファイルを選択」からデッキJSONファイルを選んでください。");
@@ -380,7 +416,7 @@
             const reader = new FileReader();
             reader.onload = function(evt) {
                 deckJsonInput.value = evt.target.result;
-                alert("ファイルのテキスト読み込みに成功しました！\n右側のテキスト貼り付け欄に中身が表示されています。\n\n「デッキを展開して分析準備 (③)」ボタンを押してカードを並べてみてください。");
+                alert("ファイルのテキスト読み込みに成功しました！\n右側のテキスト貼り付け欄に中身が表示されています。");
             };
             reader.onerror = function() {
                 alert("ファイルの読み取りに失敗しました。");
@@ -450,12 +486,14 @@
             return card.id.toString().replace(/[（）\(\)\[\]\{\}‘’]/g, '').trim();
         }
 
+        // 🟢 【②のご提案】カードレンダラーの大改造（詳細表示チェックの有無で分岐）
         function renderMainDeck() {
             mainDeckGrid.innerHTML = '';
             let totalCount = 0;
+            const isDetailed = showDetailedCheck.checked; // トグル状態の取得
 
             Object.entries(state.mainDeck).forEach(([cardId, count]) => {
-                const card = state.cardMap.get(cardId); // 標準化キーで完璧に紐づきます
+                const card = state.cardMap.get(cardId); 
                 totalCount += count;
                 const cardNode = document.createElement('div');
                 const cond = state.conditions[cardId] || 'none';
@@ -467,58 +505,68 @@
                 if (cond === 'must') {
                     borderClass = 'border-emerald-500 ring-2 ring-emerald-500/30';
                     bgClass = 'bg-emerald-950/20';
-                    badgeHtml = `<span class="absolute top-2 left-2 px-1.5 py-0.5 bg-emerald-500 text-slate-950 text-[8px] font-extrabold rounded shadow-md">必須</span>`;
+                    badgeHtml = `<span class="absolute top-2 left-2 px-1.5 py-0.5 bg-emerald-500 text-slate-950 text-[8px] font-extrabold rounded shadow-md z-10">必須</span>`;
                 } else if (cond === 'not') {
                     borderClass = 'border-rose-500 ring-2 ring-rose-500/30';
                     bgClass = 'bg-rose-950/20';
-                    badgeHtml = `<span class="absolute top-2 left-2 px-1.5 py-0.5 bg-rose-500 text-white text-[8px] font-extrabold rounded shadow-md">不純物</span>`;
+                    badgeHtml = `<span class="absolute top-2 left-2 px-1.5 py-0.5 bg-rose-500 text-white text-[8px] font-extrabold rounded shadow-md z-10">不純物</span>`;
                 }
 
-                cardNode.className = `relative group ${bgClass} border ${borderClass} rounded-xl p-3 hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[145px]`;
-                
                 const displayId = cleanDisplayId(card, cardId);
 
                 if (card) {
-                    // 🟢 【② 修正】abilitiesの配列・文字列判定を厳格化し、TypeError: card.abilities.join is not a function を完全回避
+                    // abilitiesの文字列展開を完全安全化
                     const abilitiesHtml = card.abilities 
                         ? (Array.isArray(card.abilities) ? card.abilities.join('<br>') : card.abilities.toString()) 
                         : '効果なし';
 
-                    cardNode.innerHTML = badgeHtml + `
-                        <div class="flex justify-between items-start">
-                            <span class="text-[10px] text-slate-500 font-mono">${displayId}</span>
-                            <div class="flex items-center gap-1">
-                                ${card.conditions ? `<span class="px-1 text-[9px] bg-slate-800 text-yellow-400 font-bold rounded border border-slate-700">${card.conditions}</span>` : ''}
-                                <span class="w-5 h-5 flex items-center justify-center rounded-full bg-emerald-950 border border-emerald-500 text-[10px] text-emerald-300 font-extrabold">${card.cost}</span>
+                    if (isDetailed) {
+                        // 👁️ 詳細表示モード（ホバーツールチップなし、カード内部にすべて内包）
+                        cardNode.className = `relative group ${bgClass} border ${borderClass} rounded-xl p-4 hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[220px]`;
+                        cardNode.innerHTML = badgeHtml + `
+                            <div class="flex justify-between items-start">
+                                <span class="text-[10px] text-slate-500 font-mono">${displayId}</span>
+                                <div class="flex items-center gap-1">
+                                    ${card.conditions ? `<span class="px-1 text-[9px] bg-slate-800 text-yellow-400 font-bold rounded border border-slate-700">${card.conditions}</span>` : ''}
+                                    <span class="w-5 h-5 flex items-center justify-center rounded-full bg-emerald-950 border border-emerald-500 text-[10px] text-emerald-300 font-extrabold">${card.cost}</span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="my-2">
-                            <h3 class="text-xs font-bold text-slate-200 truncate group-hover:text-emerald-300 transition-colors">${card.name}</h3>
-                            <p class="text-[9px] text-slate-500 mt-0.5">${card.species || ''} ${card.type}</p>
-                        </div>
-                        <div class="flex justify-between items-center text-[10px] mt-1 pt-1 border-t border-slate-900">
-                            <span class="text-slate-400 font-mono">${card.stats ? `⚔️${card.stats.atk} 🛡️${card.stats.def}` : '通常カード'}</span>
-                            <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">${count}枚</span>
-                        </div>
-                        <div class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 bg-slate-900 border border-slate-700 text-xs rounded-xl p-3 shadow-2xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 z-50 transform group-hover:translate-y-[-4px]">
-                            <div class="font-bold text-emerald-300 text-sm border-b border-slate-800 pb-1.5 mb-1.5 flex justify-between items-center">
-                                <span>${card.name}</span>
-                                <span class="text-[10px] text-slate-500">#${displayId}</span>
-                            </div>
-                            <div class="space-y-1 text-slate-300">
-                                <p><span class="text-slate-500">タイプ:</span> ${card.type} 【${card.species || 'なし'}】</p>
-                                <p><span class="text-slate-500">条件:</span> [${card.conditions || '無'}] / ${card.cost}エネ</p>
-                                <div class="mt-2 pt-2 border-t border-slate-800 text-[10px] text-slate-400 leading-relaxed max-h-24 overflow-y-auto">
+                            <div class="my-2 flex-grow flex flex-col justify-start">
+                                <h3 class="text-xs font-bold text-slate-200 group-hover:text-emerald-300 transition-colors">${card.name}</h3>
+                                <p class="text-[9px] text-slate-500 mt-0.5">${card.species || ''} ${card.type}</p>
+                                <div class="mt-2 pt-2 border-t border-slate-800/60 text-[10px] text-slate-400 leading-relaxed max-h-[85px] overflow-y-auto">
                                     ${abilitiesHtml}
                                 </div>
                             </div>
-                        </div>
-                    `;
+                            <div class="flex justify-between items-center text-[10px] mt-1 pt-1 border-t border-slate-900">
+                                <span class="text-slate-400 font-mono">${card.stats ? `⚔️${card.stats.atk} 🛡️${card.stats.def}` : '通常カード'}</span>
+                                <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">${count}枚</span>
+                            </div>
+                        `;
+                    } else {
+                        // 👁️ 名前のみ・簡易モード（高さが小さくすっきり整列）
+                        cardNode.className = `relative group ${bgClass} border ${borderClass} rounded-xl p-3 hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[80px]`;
+                        cardNode.innerHTML = badgeHtml + `
+                            <div class="flex justify-between items-start">
+                                <span class="text-[10px] text-slate-500 font-mono">${displayId}</span>
+                                <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-full font-bold text-[9px]">${count}枚</span>
+                            </div>
+                            <div class="mt-2">
+                                <h3 class="text-xs font-bold text-slate-200 truncate group-hover:text-emerald-300 transition-colors">${card.name}</h3>
+                            </div>
+                        `;
+                    }
                 } else {
-                    cardNode.innerHTML = `
-                        <div class="flex justify-between items-start"><span class="text-[10px] text-rose-500 font-mono">${displayId}</span></div>
-                        <div class="my-2"><h3 class="text-xs font-bold text-rose-400">未登録のカード</h3></div>
-                        <div class="flex justify-end text-[10px] font-bold"><span class="bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-full text-rose-400">${count}枚</span></div>
+                    // 未登録カード
+                    cardNode.className = `relative ${bgClass} border border-rose-950 rounded-xl p-3 flex flex-col justify-between min-h-[80px]`;
+                    cardNode.innerHTML = badgeHtml + `
+                        <div class="flex justify-between items-start">
+                            <span class="text-[10px] text-rose-500 font-mono">${displayId}</span>
+                            <span class="bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 rounded-full text-rose-400 font-bold text-[9px]">${count}枚</span>
+                        </div>
+                        <div class="mt-2">
+                            <h3 class="text-xs font-bold text-rose-400 truncate">未登録のカード</h3>
+                        </div>
                     `;
                 }
 
@@ -538,33 +586,53 @@
         function renderTerritoryDeck() {
             territoryDeckGrid.innerHTML = '';
             let totalCount = 0;
+            const isDetailed = showDetailedCheck.checked;
 
             Object.entries(state.territoryDeck).forEach(([cardId, count]) => {
-                const card = state.cardMap.get(cardId); // 領土も RYO-x の標準化キーで確実にヒット
+                const card = state.cardMap.get(cardId); 
                 totalCount += count;
                 const cardNode = document.createElement('div');
-                cardNode.className = 'relative group bg-slate-950 border border-slate-800 rounded-xl p-3 hover:border-blue-500 hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[145px]';
-
+                
                 const displayId = cleanDisplayId(card, cardId);
 
                 if (card) {
+                    if (isDetailed) {
+                        cardNode.className = 'relative group bg-slate-950 border border-slate-800 rounded-xl p-4 hover:border-blue-500 hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[145px]';
+                        cardNode.innerHTML = `
+                            <div class="flex justify-between items-start">
+                                <span class="text-[10px] text-slate-500 font-mono">${displayId}</span>
+                            </div>
+                            <div class="my-2">
+                                <h3 class="text-xs font-bold text-slate-200 truncate group-hover:text-blue-300 transition-colors">${card.name}</h3>
+                                <p class="text-[9px] text-slate-400 mt-0.5">領土 (${card.conditions})</p>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] mt-1 pt-1 border-t border-slate-900">
+                                <span class="text-blue-400 font-mono">${card.scry ? '👁️占術あり' : '⛰️通常領土'}</span>
+                                <span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full font-bold">${count}枚</span>
+                            </div>
+                        `;
+                    } else {
+                        cardNode.className = 'relative group bg-slate-950 border border-slate-800 rounded-xl p-3 hover:border-blue-500 hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[80px]';
+                        cardNode.innerHTML = `
+                            <div class="flex justify-between items-start">
+                                <span class="text-[10px] text-slate-500 font-mono">${displayId}</span>
+                                <span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded-full font-bold text-[9px]">${count}枚</span>
+                            </div>
+                            <div class="mt-2">
+                                <h3 class="text-xs font-bold text-slate-200 truncate group-hover:text-blue-300 transition-colors">${card.name}</h3>
+                            </div>
+                        `;
+                    }
+                } else {
+                    cardNode.className = 'relative bg-slate-950 border border-rose-950 rounded-xl p-3 flex flex-col justify-between min-h-[80px]';
                     cardNode.innerHTML = `
                         <div class="flex justify-between items-start">
-                            <span class="text-[10px] text-slate-500 font-mono">${displayId}</span>
+                            <span class="text-[10px] text-rose-500 font-mono">${displayId}</span>
+                            <span class="bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded-full text-blue-400 text-[9px]">${count}枚</span>
                         </div>
-                        <div class="my-2">
-                            <h3 class="text-xs font-bold text-slate-200 truncate group-hover:text-blue-300 transition-colors">${card.name}</h3>
-                            <p class="text-[9px] text-slate-500 mt-0.5">領土 (${card.conditions})</p>
+                        <div class="mt-2">
+                            <h3 class="text-xs font-bold text-blue-400 truncate">未登録の領土</h3>
                         </div>
-                        <div class="flex justify-between items-center text-[10px] mt-1 pt-1 border-t border-slate-900">
-                            <span class="text-blue-400 font-mono">${card.scry ? '👁️占術' : '⛰️通常'}</span>
-                            <span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full font-bold">${count}枚</span>
-                        </div>
-                    `;
-                } else {
-                    cardNode.innerHTML = `
-                        <div class="my-2"><h3 class="text-xs font-bold text-blue-400">未登録の領土</h3><p class="text-[9px] text-slate-500 mt-0.5">ID: ${displayId}</p></div>
-                        <div class="flex justify-end text-[10px] font-bold"><span class="bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full text-blue-400">${count}枚</span></div>
                     `;
                 }
                 territoryDeckGrid.appendChild(cardNode);
