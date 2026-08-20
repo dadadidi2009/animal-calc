@@ -34,14 +34,21 @@
     <!-- メインコンテンツ -->
     <main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6 flex-grow w-full">
 
-        <!-- 状態・エラーログバナー -->
-        <div id="loaderStatusBanner" class="bg-amber-950/30 border border-amber-500/20 rounded-xl p-4 flex items-center justify-between text-xs text-amber-300">
-            <div class="flex items-center gap-2">
-                <span class="animate-pulse">🔄</span>
-                <span id="bannerText">カードマスターJSONを起動読み込みしています...</span>
+        <!-- 🔍 リアルタイムJSON読込チェッカー（強化バナー） -->
+        <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span id="bannerEmoji" class="animate-pulse text-lg">🔄</span>
+                    <span id="bannerText" class="font-bold text-amber-300 text-sm">カードマスターJSONを起動読み込みしています...</span>
+                </div>
+                <span id="loadProgressCount" class="font-mono bg-slate-950 px-2.5 py-1 rounded-md border border-slate-800 text-slate-400 text-xs">0 / 8 files</span>
             </div>
-            <span id="loadProgressCount" class="font-mono bg-slate-900 px-2 py-0.5 rounded border border-slate-800">0 / 8 files</span>
-        </div>
+            
+            <!-- 各ファイルの個別読込ステータスランプ -->
+            <div id="fileStatusGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-800/80 text-[11px]">
+                <!-- JSで動的にステータスを生成 -->
+            </div>
+        </section>
 
         <!-- 1. デッキインポートエリア -->
         <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
@@ -80,7 +87,7 @@
                     <div class="space-y-1.5 text-xs text-slate-300 leading-relaxed">
                         <p class="font-bold text-slate-400">⛰️ シミュレーション判定ルール:</p>
                         <ul class="list-disc list-inside space-y-1 text-slate-400">
-                            <li><strong>不純物(赤)</strong>: 最初の7枚に3枚以上あると、2枚戻しても手札に残るため事故(失敗)と判定 [3]。</li>
+                            <li><strong>不純物(赤)</strong>: 最初の7枚に3枚以上あると、2枚戻しても手札に残るため事故(失敗)と判定。</li>
                             <li><strong>ムーブイン</strong>: 3T以降に場に出た2色領土は、そのターンのみコスト供給不可。次のターンから1コストとして復活。</li>
                             <li><strong>占術領土</strong>: めくれた際、次ターンの領土をPeekし、手札のパーツに不要なら山札の底へ。</li>
                         </ul>
@@ -98,7 +105,7 @@
                     </div>
                 </div>
 
-                <!-- グラフ描画エリア (Chart.js) -->
+                <!-- グラフ描画エリア -->
                 <div class="lg:col-span-2 bg-slate-950 p-4 rounded-xl border border-slate-800/80 flex flex-col justify-between min-h-[250px]">
                     <div class="flex justify-between items-center mb-2">
                         <p class="text-xs text-slate-400 font-bold">📈 ターン別・プレイ可能率グラフ (累積確率)</p>
@@ -143,12 +150,11 @@
 
     <!-- JavaScript 制御 -->
     <script>
-        // アプリの状態
         const state = {
-            mainDeck: {},       // id -> count
-            territoryDeck: {},  // id -> count
-            cardMap: new Map(), // 合体した全カードデータ
-            conditions: {}      // id -> 'must' | 'not' | 'none'
+            mainDeck: {},       
+            territoryDeck: {},  
+            cardMap: new Map(), 
+            conditions: {}      
         };
 
         let myChart = null;
@@ -168,59 +174,102 @@
         const chartPlaceholder = document.getElementById('chartPlaceholder');
         const bannerText = document.getElementById('bannerText');
         const loadProgressCount = document.getElementById('loadProgressCount');
-        const loaderStatusBanner = document.getElementById('loaderStatusBanner');
+        const fileStatusGrid = document.getElementById('fileStatusGrid');
+        const bannerEmoji = document.getElementById('bannerEmoji');
 
-        // --- 起動時に 8つの JSON ファイルを非同期並行ロードして自動マージ ---
+        // --- 起動時に 8つの JSON ファイルを非同期並行ロードして自動マージ ＆ 画面可視化 ---
         async function loadAllCardLists() {
             const fileNames = [
                 'vol1.json', 'vol2.json', 'vol3.json', 'vol4.json',
                 'vol5.json', 'vol6.json', 'vol7.json', 'vol8.json'
             ];
 
+            // 最初にステータス欄を「準備中」で埋める
+            fileStatusGrid.innerHTML = fileNames.map((file, idx) => `
+                <div id="status-${idx}" class="flex items-center gap-2 bg-slate-950 p-2 rounded-lg border border-slate-800 text-slate-500">
+                    <span class="w-2.5 h-2.5 rounded-full bg-slate-700 animate-pulse"></span>
+                    <span class="font-mono">${file} (読込中)</span>
+                </div>
+            `).join('');
+
             let loadedCount = 0;
-            try {
-                const fetchPromises = fileNames.map(file => 
-                    fetch(file)
-                        .then(res => {
-                            if (!res.ok) throw new Error(`${file} が見当たりません`);
-                            loadedCount++;
-                            loadProgressCount.textContent = `${loadedCount} / 8 files`;
-                            return res.json();
-                        })
-                        .catch(err => {
-                            console.warn(`一部のファイルがロードできませんでした: ${file}`);
-                            return []; // エラー時は空配列を返してマージを継続
-                        })
-                );
+            let successTotalCards = 0;
 
-                const allVolumesData = await Promise.all(fetchPromises);
-                const mergedCards = allVolumesData.flat();
+            const fetchPromises = fileNames.map((file, idx) => {
+                const statusDiv = document.getElementById(`status-${idx}`);
+                const dot = statusDiv.querySelector('span');
 
-                state.cardMap.clear();
-                mergedCards.forEach(card => {
-                    if (card && card.id) {
-                        state.cardMap.set(card.id, card);
-                    }
-                });
+                return fetch(file)
+                    .then(res => {
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        return res.json();
+                    })
+                    .then(data => {
+                        loadedCount++;
+                        loadProgressCount.textContent = `${loadedCount} / 8 files`;
+                        
+                        // 読込成功：緑色に点灯
+                        statusDiv.classList.remove('text-slate-500', 'border-slate-800');
+                        statusDiv.classList.add('text-emerald-400', 'border-emerald-500/20', 'bg-emerald-950/10');
+                        dot.classList.remove('bg-slate-700', 'animate-pulse');
+                        dot.classList.add('bg-emerald-500');
+                        statusDiv.querySelector('span:last-child').textContent = `${file} (${data.length}枚)`;
 
-                if (state.cardMap.size > 0) {
-                    bannerText.textContent = `✅ データベース読み込み完了: 合計 ${state.cardMap.size} 枚のカードと紐付き可能です！`;
-                    loaderStatusBanner.classList.remove('bg-amber-950/30', 'border-amber-500/20', 'text-amber-300');
-                    loaderStatusBanner.classList.add('bg-emerald-950/30', 'border-emerald-500/20', 'text-emerald-300');
-                } else {
-                    bannerText.textContent = `⚠ JSONがありません。PCローカルではセキュリティにより読み込めないため、GitHub/Netlifyにアップロードすると機能します。`;
+                        successTotalCards += data.length;
+                        return data;
+                    })
+                    .catch(err => {
+                        loadedCount++;
+                        loadProgressCount.textContent = `${loadedCount} / 8 files`;
+                        
+                        // 読込失敗：赤色に点灯
+                        statusDiv.classList.remove('text-slate-500', 'border-slate-800');
+                        statusDiv.classList.add('text-rose-400', 'border-rose-500/20', 'bg-rose-950/10');
+                        dot.classList.remove('bg-slate-700', 'animate-pulse');
+                        dot.classList.add('bg-rose-500');
+                        
+                        let errorMsg = '読込失敗';
+                        if (window.location.protocol === 'file:') {
+                            errorMsg = 'ローカル制限'; // file:// 制約
+                        } else {
+                            errorMsg = err.message.includes('404') ? '404なし' : 'JSONエラー';
+                        }
+                        statusDiv.querySelector('span:last-child').textContent = `${file} (${errorMsg})`;
+                        return [];
+                    });
+            });
+
+            const allVolumesData = await Promise.all(fetchPromises);
+            const mergedCards = allVolumesData.flat();
+
+            state.cardMap.clear();
+            mergedCards.forEach(card => {
+                if (card && card.id) {
+                    state.cardMap.set(card.id, card);
                 }
+            });
 
-            } catch (error) {
-                console.error("ロードエラー:", error);
-                bannerText.textContent = `🚨 カードマスターデータのロード中にエラーが発生しました。`;
+            if (state.cardMap.size > 0) {
+                bannerEmoji.textContent = '✅';
+                bannerEmoji.classList.remove('animate-pulse');
+                bannerText.textContent = `データベース構築完了！全 ${state.cardMap.size} 枚のカードが紐付け可能です。`;
+                bannerText.className = 'font-bold text-emerald-400 text-sm';
+            } else {
+                bannerEmoji.textContent = '🚨';
+                bannerEmoji.classList.remove('animate-pulse');
+                if (window.location.protocol === 'file:') {
+                    bannerText.textContent = `PC上で直接ダブルクリックして開いているため、ブラウザ制限で読み込めません。GitHub Pagesへアップすると緑になります。`;
+                    bannerText.className = 'font-bold text-rose-400 text-sm';
+                } else {
+                    bannerText.textContent = `エラー：JSONファイルが見つからないか、中身に構文エラーがあります。`;
+                    bannerText.className = 'font-bold text-rose-400 text-sm';
+                }
             }
         }
 
-        // 起動時に呼び出し
         window.addEventListener('DOMContentLoaded', loadAllCardLists);
 
-        // --- ファイル選択、またはテキストエリアからデッキ情報を読み込む ---
+        // --- デッキ読み込み処理 ---
         deckFileInput.addEventListener('change', (e) => {
             const file = e.target.files;
             if (!file) return;
@@ -243,7 +292,7 @@
                 const parsed = JSON.parse(deckJsonInput.value || '{}');
                 executeImport(parsed);
             } catch (err) {
-                alert('JSONテキストの解析に失敗しました。カンマ忘れや不要な括弧がないか確認してください。');
+                alert('JSONテキストの解析に失敗しました。括弧やカンマの不整合がないか確認してください。');
             }
         });
 
@@ -340,7 +389,7 @@
                                 <span class="text-[10px] text-slate-500">#${card.id}</span>
                             </div>
                             <div class="space-y-1 text-slate-300">
-                                <p><span class="text-slate-500">タイプ/種属:</span> ${card.type} 【${card.species || 'なし'}】</p>
+                                <p><span class="text-slate-500">タイプ:</span> ${card.type} 【${card.species || 'なし'}】</p>
                                 <p><span class="text-slate-500">条件/コスト:</span> [${card.conditions || '無'}] / ${card.cost}エネ</p>
                                 <div class="mt-2 pt-2 border-t border-slate-800 text-[10px] text-slate-400 leading-relaxed max-h-24 overflow-y-auto">
                                     ${card.abilities ? card.abilities.join('<br>') : '効果なし'}
@@ -357,7 +406,6 @@
                         updateStatusText();
                     });
                 } else {
-                    // データベース未登録のフォールバック
                     cardNode.innerHTML = `
                         <div class="flex justify-between items-start"><span class="text-[10px] text-rose-500 font-mono">${cardId}</span></div>
                         <div class="my-2"><h3 class="text-xs font-bold text-rose-400">未登録のカード</h3></div>
@@ -419,7 +467,7 @@
             return array;
         }
 
-        // 二色領土の最適割り当てアルゴリズム
+        // 2色領土最適割り振り
         function canSatisfyConditions(requiredConditions, availableLands) {
             if (requiredConditions.length === 0) return true;
             if (availableLands.length < requiredConditions.length) return false;
@@ -465,18 +513,16 @@
             return needed;
         }
 
-        // --- シミュレーションコア ---
         runSimulationBtn.addEventListener('click', () => {
             const runs = parseInt(simRunsSelect.value, 10);
             const mustIds = Object.entries(state.conditions).filter(([_, type]) => type === 'must').map(([id]) => id);
             const notIds = Object.entries(state.conditions).filter(([_, type]) => type === 'not').map(([id]) => id);
 
             if (mustIds.length === 0) {
-                alert("必須カード(緑枠)を少なくとも1枚指定してください。");
+                alert("初手からプレイする『必須カード』(緑枠)を少なくとも1枚指定してください。");
                 return;
             }
 
-            // メインデッキ・領土デッキのプール構築
             let mainDeckArray = [];
             let mainTotal = 0;
             Object.entries(state.mainDeck).forEach(([id, count]) => {
@@ -497,7 +543,7 @@
             }
 
             runSimulationBtn.disabled = true;
-            runSimulationBtn.innerHTML = `<span>⏳ 領土成長シミュレーション計算中...</span>`;
+            runSimulationBtn.innerHTML = `<span>⏳ シミュレーション計算中...</span>`;
 
             setTimeout(() => {
                 const mustCardObjects = mustIds.map(id => state.cardMap.get(id)).filter(Boolean);
@@ -507,14 +553,12 @@
                     const shuffledMain = shuffle([...mainDeckArray]);
                     const initialDraw = shuffledMain.slice(0, 7);
 
-                    // Step 1: 初手条件チェック
                     let hasAllMust = mustIds.every(id => initialDraw.includes(id));
                     if (!hasAllMust) continue;
 
                     let garnetCount = initialDraw.filter(id => notIds.includes(id)).length;
-                    if (garnetCount > 2) continue; // 不純物が手札に残り事故
+                    if (garnetCount > 2) continue; 
 
-                    // Step 2: ターン別領土成長・占術シミュレーション
                     const shuffledTerritory = shuffle([...territoryDeckArray]);
                     let activeTerritories = [];
 
@@ -526,7 +570,6 @@
                             turnPlayed: T
                         });
 
-                        // 占術効果 (めくった領土がScryかつ、まだデッキに次がある場合)
                         if (currentLand.scry && T < shuffledTerritory.length) {
                             let nextLandIndex = T; 
                             let nextLand = shuffledTerritory[nextLandIndex];
@@ -537,11 +580,10 @@
                             let isUseful = nextLandColors.some(color => neededColors.includes(color));
                             if (!isUseful) {
                                 shuffledTerritory.splice(nextLandIndex, 1);
-                                shuffledTerritory.push(nextLand); // 底へ
+                                shuffledTerritory.push(nextLand); 
                             }
                         }
 
-                        // プレイ可否判定 (必須カードすべてがプレイ可能か)
                         let allPlayable = mustCardObjects.every(card => {
                             let reqColors = card.conditions ? card.conditions.split('') : [];
                             let availColors = activeTerritories.map(land => land.conditions ? land.conditions.split('') : []);
