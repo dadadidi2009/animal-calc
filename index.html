@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アニマルカードゲーム Web確率計算機 ver 0.2608201200</title>
+    <title>アニマルカードゲーム Web確率計算機 ver 0.2608200557</title>
     <!-- Tailwind CSS & Chart.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -25,7 +25,7 @@
             <h1 class="text-xl font-bold text-emerald-400 flex items-center gap-2">
                 🐾 アニマルカードゲーム Web確率計算機
                 <span class="text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono">
-                    ver 0.2608201200
+                    ver 0.2608200557
                 </span>
             </h1>
             <span class="text-xs bg-slate-800 text-slate-400 px-3 py-1 rounded-full border border-slate-700 font-mono">
@@ -59,7 +59,7 @@
                 <h2 class="text-base font-bold text-emerald-300 flex items-center gap-2">
                     📥 デッキJSONの読み込み
                 </h2>
-                <!-- 🟢 【②のご提案】詳細表示切り替えチェックボックス新設 -->
+                <!-- 詳細表示切り替えチェックボックス -->
                 <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
                     <input type="checkbox" id="showDetailedCheck" class="w-4 h-4 rounded text-emerald-500 bg-slate-900 border-slate-800 focus:ring-emerald-500 focus:ring-offset-slate-950 cursor-pointer">
                     <label for="showDetailedCheck" class="text-xs font-bold text-slate-300 cursor-pointer select-none">
@@ -75,7 +75,6 @@
                         <input type="file" id="deckFileInput" accept=".json" 
                             class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700 cursor-pointer border border-slate-800 p-1.5 rounded-lg bg-slate-950">
                     </div>
-                    <!-- 🟢 【③のご提案】テキスト化して表示することに特化した、完全に独立した読込ボタン -->
                     <button id="loadTextBtn" class="w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg border border-slate-700 transition-all text-xs h-[38px] whitespace-nowrap">
                         📄 ファイルをテキスト読込する
                     </button>
@@ -89,8 +88,34 @@
             </div>
             <div class="flex justify-end gap-2 text-xs pt-2">
                 <button id="importBtn" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-lg hover:shadow-emerald-500/20 transition-all">
-                    デッキを展開して分析準備 (③)
+                    デッキを展開して分析準備
                 </button>
+            </div>
+        </section>
+
+        <!-- 🟢 【②のご提案】バグ切り分け専用：純粋なファイルテキスト読み込みチェッカー（完全独立型） -->
+        <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
+            <h2 class="text-base font-bold text-sky-400 flex items-center gap-2">
+                🔍 【バグ切り分け専用】純粋ファイルテキスト読み込みチェッカー
+            </h2>
+            <p class="text-xs text-slate-400 leading-relaxed">
+                ※このエリアは、アップロードされたファイルをブラウザが正常に読み込めているかを単体で確認するための検証エリアです。既存の動作に影響を与えません。
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-slate-400">ファイルをアップロード（検証専用）</label>
+                    <input type="file" id="debugFileInput" accept=".json" 
+                        class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700 cursor-pointer border border-slate-800 p-1.5 rounded-lg bg-slate-950">
+                    <button id="debugLoadBtn" class="px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-lg shadow-lg transition-all text-xs">
+                        📄 このファイルを読み込んでテキスト化する
+                    </button>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-2">読み込まれたプレーンテキスト出力先</label>
+                    <textarea id="debugTextOutput" rows="6" readonly
+                        class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs font-mono text-sky-400 focus:outline-none h-[120px] overflow-y-auto"
+                        placeholder="ファイルを選択して左の読み込みボタンを押すと、ここへ中身のテキストがそのまま表示されます。"></textarea>
+                </div>
             </div>
         </section>
 
@@ -238,10 +263,10 @@
                 return normalizeCardListId(rawId);
             }
 
-            // 🟢 【④のご提案】デッキ構築サイトのバグ救済。ACG-038が039として誤出力される問題を自動補正
-            if (num === 39) {
-                console.log("🛠️ ワークアラウンド適用: ID 39 を ACG-038 (妖狐の巻物) に自動補正しました。");
-                num = 38;
+            // 🟢 【①の修正】BP1-038がBP1-039 (ID 5039) として誤登録されている問題の自動補正
+            if (num === 5039) {
+                console.log("🛠️ ワークアラウンド適用: デッキID 5039 (BP1-039) を BP1-038 に自動補正しました。");
+                return "BP1-38";
             }
 
             if (num >= 8000 && num < 9000) {
@@ -339,7 +364,7 @@
             if (state.cardMap.size > 0) {
                 bannerEmoji.textContent = '✅';
                 bannerEmoji.classList.remove('animate-pulse');
-                bannerText.textContent = `データベース構築完了！全 ${state.cardMap.size} 枚のカードが紐付け可能です。`;
+                bannerText.textContent = `データベース構築完了！全 ${state.cardMap.size} 枚의 カードが紐付け可能です。`;
                 bannerText.className = 'font-bold text-emerald-400 text-sm';
             } else {
                 bannerEmoji.textContent = '🚨';
@@ -383,16 +408,15 @@
             }
         }
 
-        // --- 🟢 【①＆③のご提案】ファイルをアップロードした際に、テキスト読み込みをする処理の完全確実化 ---
+        // --- ①＆③ デッキインポート処理（選択ファイルの自動ロード） ---
         let selectedFile = null;
         
-        // ファイルの選択を検知
         deckFileInput.addEventListener('change', (e) => {
             const files = e.target.files;
             if (files && files.length > 0) {
-                selectedFile = files; // 🟢 FileListから安全に0番目のFileオブジェクトを取得
+                selectedFile = files; 
 
-                // ファイルを選択した瞬間に、自動でテキストエリアに中身を転記する
+                // 選択時に自動転記
                 const reader = new FileReader();
                 reader.onload = function(evt) {
                     deckJsonInput.value = evt.target.result;
@@ -406,7 +430,6 @@
             }
         });
 
-        // 「📄 ファイルをテキスト読込する」ボタン押下でも動作するように完全独立
         loadTextBtn.addEventListener('click', () => {
             if (!selectedFile) {
                 alert("ファイルが選択されていません。先に「ファイルを選択」からデッキJSONファイルを選んでください。");
@@ -424,7 +447,32 @@
             reader.readAsText(selectedFile); 
         });
 
-        // 展開実行ボタン (③)
+        // 🟢 【②の追加】バグ切り分け専用：純粋テキスト読み込みチェッカーの動作
+        const debugFileInput = document.getElementById('debugFileInput');
+        const debugLoadBtn = document.getElementById('debugLoadBtn');
+        const debugTextOutput = document.getElementById('debugTextOutput');
+
+        debugLoadBtn.addEventListener('click', () => {
+            const files = debugFileInput.files;
+            if (!files || files.length === 0) {
+                alert("検証用のファイルが選択されていません。チェッカーエリアの「ファイルを選択」から選んでください。");
+                return;
+            }
+            
+            const file = files;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                debugTextOutput.value = evt.target.result;
+                alert("【検証成功】ファイルをプレーンテキストとして正常に読み込み、右側のエリアに表示しました！");
+            };
+            reader.onerror = function(err) {
+                alert("【検証失敗】ブラウザによるファイル読み込み中にエラーが発生しました。");
+                console.error(err);
+            };
+            reader.readAsText(file);
+        });
+
+        // 展開実行ボタン
         importBtn.addEventListener('click', () => {
             try {
                 const parsed = robustJsonParse(deckJsonInput.value || '{}'); 
@@ -486,11 +534,11 @@
             return card.id.toString().replace(/[（）\(\)\[\]\{\}‘’]/g, '').trim();
         }
 
-        // 🟢 【②のご提案】カードレンダラーの大改造（詳細表示チェックの有無で分岐）
+        // カードレンダラー
         function renderMainDeck() {
             mainDeckGrid.innerHTML = '';
             let totalCount = 0;
-            const isDetailed = showDetailedCheck.checked; // トグル状態の取得
+            const isDetailed = showDetailedCheck.checked;
 
             Object.entries(state.mainDeck).forEach(([cardId, count]) => {
                 const card = state.cardMap.get(cardId); 
@@ -515,13 +563,11 @@
                 const displayId = cleanDisplayId(card, cardId);
 
                 if (card) {
-                    // abilitiesの文字列展開を完全安全化
                     const abilitiesHtml = card.abilities 
                         ? (Array.isArray(card.abilities) ? card.abilities.join('<br>') : card.abilities.toString()) 
                         : '効果なし';
 
                     if (isDetailed) {
-                        // 👁️ 詳細表示モード（ホバーツールチップなし、カード内部にすべて内包）
                         cardNode.className = `relative group ${bgClass} border ${borderClass} rounded-xl p-4 hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[220px]`;
                         cardNode.innerHTML = badgeHtml + `
                             <div class="flex justify-between items-start">
@@ -544,7 +590,6 @@
                             </div>
                         `;
                     } else {
-                        // 👁️ 名前のみ・簡易モード（高さが小さくすっきり整列）
                         cardNode.className = `relative group ${bgClass} border ${borderClass} rounded-xl p-3 hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[80px]`;
                         cardNode.innerHTML = badgeHtml + `
                             <div class="flex justify-between items-start">
@@ -557,7 +602,6 @@
                         `;
                     }
                 } else {
-                    // 未登録カード
                     cardNode.className = `relative ${bgClass} border border-rose-950 rounded-xl p-3 flex flex-col justify-between min-h-[80px]`;
                     cardNode.innerHTML = badgeHtml + `
                         <div class="flex justify-between items-start">
