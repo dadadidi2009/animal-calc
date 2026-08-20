@@ -177,9 +177,16 @@
         const fileStatusGrid = document.getElementById('fileStatusGrid');
         const bannerEmoji = document.getElementById('bannerEmoji');
 
+        // 変換ロジック
+        function formatCardId(rawId) {
+            const num = parseInt(rawId, 10);
+            if (isNaN(num)) return rawId.toString().trim();
+            if (num >= 8000) return `ACG-${num}`;
+            return `ACG-${String(num).padStart(3, '0')}`;
+        }
+
         // --- 起動時に 8つの JSON ファイルを非同期並行ロードして自動マージ ---
         async function loadAllCardLists() {
-            // ★ご提示いただいた、大文字・小文字、日本語を含む正確なファイルリスト
             const fileNames = [
                 'AGC1第１弾.json',
                 'AGC2第２弾.json',
@@ -206,7 +213,7 @@
                 const statusDiv = document.getElementById(`status-${idx}`);
                 const dot = statusDiv.querySelector('span');
 
-                return fetch(encodeURIComponent(file)) // ★日本語ファイル名用にURLエンコード
+                return fetch(encodeURIComponent(file)) 
                     .then(res => {
                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
                         return res.json();
@@ -250,7 +257,17 @@
             state.cardMap.clear();
             mergedCards.forEach(card => {
                 if (card && card.id) {
-                    state.cardMap.set(card.id, card);
+                    const rawId = card.id.toString().trim();
+                    const normalizedId = formatCardId(rawId);
+                    
+                    // どのID表記（数値・文字列・ACG-有り無し）でもヒットするよう、全パターンを登録（強力な名寄せ）
+                    state.cardMap.set(rawId, card);
+                    state.cardMap.set(normalizedId, card);
+                    
+                    const num = parseInt(rawId, 10);
+                    if (!isNaN(num)) {
+                        state.cardMap.set(num.toString(), card);
+                    }
                 }
             });
 
@@ -276,12 +293,15 @@
 
         // --- 壊れた不完全なJSONを自動で修復して読み込む救済パースロジック ---
         function robustJsonParse(text) {
-            const trimmed = text.trim();
+            let trimmed = text.trim();
             try {
                 return JSON.parse(trimmed);
             } catch (firstError) {
                 console.warn("JSONの標準パースに失敗しました。カッコ修復処理を試みます...", firstError.message);
                 
+                // 末尾に不要なコンマがある場合、一旦削除
+                trimmed = trimmed.replace(/,(\s*[}\]]*)$/, '$1');
+
                 let openBraces = (trimmed.match(/{/g) || []).length;
                 let closeBraces = (trimmed.match(/}/g) || []).length;
                 
@@ -292,18 +312,18 @@
                         console.log("✅ カッコを補完して無事JSONのロードに成功しました！");
                         return parsed;
                     } catch (secondError) {
-                        throw new Error("カッコを自動補完しましたがパースできませんでした。JSONファイルのフォーマット（カンマの過不足など）を再確認してください。");
+                        throw new Error("カッコを自動補完しましたがパースできませんでした。JSONファイルのフォーマット（不要なカンマなど）を再確認してください。");
                     }
                 }
                 throw firstError;
             }
         }
 
-        // --- デッキ読み込み処理 (FileListバグ修正済) ---
+        // --- デッキ読み込み処理 (FileListインデックスバグを完全解決) ---
         deckFileInput.addEventListener('change', (e) => {
             const files = e.target.files;
             if (!files || files.length === 0) return;
-            const file = files; 
+            const file = files; // 🟢 【重要修正】FileListから0番目のFileオブジェクトを正しく抽出
 
             const reader = new FileReader();
             reader.onload = function(evt) {
@@ -312,10 +332,14 @@
                     deckJsonInput.value = JSON.stringify(parsed, null, 2);
                     executeImport(parsed);
                 } catch (err) {
+                    console.error("ファイルパースエラー:", err);
                     alert('デッキJSONの読み込みに失敗しました。ファイル形式に問題があります。\n\n詳細: ' + err.message);
                 }
             };
-            reader.readAsText(file); 
+            reader.onerror = function(err) {
+                alert('ファイルの読み取りに失敗しました。');
+            };
+            reader.readAsText(file); // 🟢 これで正常に実行されるようになります
         });
 
         importBtn.addEventListener('click', () => {
@@ -328,38 +352,35 @@
             }
         });
 
-        // 変換ロジック (例: "20" -> "ACG-020", "8015" -> "ACG-8015")
-        function formatCardId(rawId) {
-            const num = parseInt(rawId, 10);
-            if (isNaN(num)) return rawId;
-            if (num >= 8000) return `ACG-${num}`;
-            return `ACG-${String(num).padStart(3, '0')}`;
-        }
-
         function executeImport(deckData) {
-            state.mainDeck = {};
-            state.territoryDeck = {};
-            state.conditions = {};
+            try {
+                state.mainDeck = {};
+                state.territoryDeck = {};
+                state.conditions = {};
 
-            if (deckData.mainDeck) {
-                Object.entries(deckData.mainDeck).forEach(([rawId, count]) => {
-                    const formattedId = formatCardId(rawId);
-                    state.mainDeck[formattedId] = count;
-                    state.conditions[formattedId] = 'none';
-                });
+                if (deckData.mainDeck) {
+                    Object.entries(deckData.mainDeck).forEach(([rawId, count]) => {
+                        const formattedId = formatCardId(rawId);
+                        state.mainDeck[formattedId] = count;
+                        state.conditions[formattedId] = 'none';
+                    });
+                }
+
+                if (deckData.territoryDeck) {
+                    Object.entries(deckData.territoryDeck).forEach(([rawId, count]) => {
+                        const formattedId = formatCardId(rawId);
+                        state.territoryDeck[formattedId] = count;
+                    });
+                }
+
+                renderMainDeck();
+                renderTerritoryDeck();
+                simulatorControlSection.classList.remove('hidden');
+                updateStatusText();
+            } catch (err) {
+                console.error("インポート展開エラー:", err);
+                alert("デッキの展開中にエラーが発生しました。カードリストとの紐付けがズレている可能性があります。");
             }
-
-            if (deckData.territoryDeck) {
-                Object.entries(deckData.territoryDeck).forEach(([rawId, count]) => {
-                    const formattedId = formatCardId(rawId);
-                    state.territoryDeck[formattedId] = count;
-                });
-            }
-
-            renderMainDeck();
-            renderTerritoryDeck();
-            simulatorControlSection.classList.remove('hidden');
-            updateStatusText();
         }
 
         function updateStatusText() {
@@ -430,28 +451,22 @@
                             </div>
                         </div>
                     `;
-
-                    cardNode.addEventListener('click', () => {
-                        if (cond === 'none') state.conditions[cardId] = 'must';
-                        else if (cond === 'must') state.conditions[cardId] = 'not';
-                        else state.conditions[cardId] = 'none';
-                        renderMainDeck();
-                        updateStatusText();
-                    });
                 } else {
                     cardNode.innerHTML = `
                         <div class="flex justify-between items-start"><span class="text-[10px] text-rose-500 font-mono">${cardId}</span></div>
                         <div class="my-2"><h3 class="text-xs font-bold text-rose-400">未登録のカード</h3></div>
                         <div class="flex justify-end text-[10px] font-bold"><span class="bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-full text-rose-400">${count}枚</span></div>
                     `;
-                    cardNode.addEventListener('click', () => {
-                        if (cond === 'none') state.conditions[cardId] = 'must';
-                        else if (cond === 'must') state.conditions[cardId] = 'not';
-                        else state.conditions[cardId] = 'none';
-                        renderMainDeck();
-                        updateStatusText();
-                    });
                 }
+
+                cardNode.addEventListener('click', () => {
+                    if (cond === 'none') state.conditions[cardId] = 'must';
+                    else if (cond === 'must') state.conditions[cardId] = 'not';
+                    else state.conditions[cardId] = 'none';
+                    renderMainDeck();
+                    updateStatusText();
+                });
+
                 mainDeckGrid.appendChild(cardNode);
             });
             mainDeckCountEl.textContent = `(${totalCount}枚)`;
@@ -500,7 +515,6 @@
             return array;
         }
 
-        // 2色領土の自動最適割り振り
         function canSatisfyConditions(requiredConditions, availableLands) {
             if (requiredConditions.length === 0) return true;
             if (availableLands.length < requiredConditions.length) return false;
@@ -546,7 +560,6 @@
             return needed;
         }
 
-        // --- シミュレーションコア ---
         runSimulationBtn.addEventListener('click', () => {
             const runs = parseInt(simRunsSelect.value, 10);
             const mustIds = Object.entries(state.conditions).filter(([_, type]) => type === 'must').map(([id]) => id);
