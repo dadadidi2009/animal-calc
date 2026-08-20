@@ -4,9 +4,10 @@
     "name": "平野",
     "reading": "へいや",
     "cost": 0,
-    "conditions": "",
+    "conditions": "平",
     "type": "領土",
     "species": "基礎",
+    "scry": false,
     "stats": {
       "atk": 0,
       "def": 0
@@ -18,16 +19,17 @@
     "abilities": [
       "《平野》（これはあなたがカードをプレイする時、平野条件の1つとして数えられる。）\n【起動（領地）】［ムーブ］これを夜にする。"
     ],
-    "full_text_for_search": "（RYO-001） 平野（へいや） 0  領土 基础 平野 起動 《平野》（これはあなたがカードをプレイする時、平野条件の1つとして数えられる。）【起動（領地）】［ムーブ］これを夜にする。"
+    "full_text_for_search": "（RYO-001） 平野（へいや） 0 領土 基础 平野 起動 《平野》（これはあなたがカードをプレイする時、平野条件の1つとして数えられる。）【起動（領地）】［ムーブ］これを夜にする。"
   },
   {
     "id": "（RYO-002）",
     "name": "山岳",
     "reading": "さんがく",
     "cost": 0,
-    "conditions": "",
+    "conditions": "山",
     "type": "領土",
     "species": "基礎",
+    "scry": false,
     "stats": {
       "atk": 0,
       "def": 0
@@ -46,9 +48,10 @@
     "name": "水生",
     "reading": "すいせい",
     "cost": 0,
-    "conditions": "",
+    "conditions": "水",
     "type": "領土",
     "species": "基礎",
+    "scry": false,
     "stats": {
       "atk": 0,
       "def": 0
@@ -59,16 +62,17 @@
     "abilities": [
       "《水生》（これはあなたがカードをプレイする時、水生条件の1つとして数えられる。）\n【起動（領地）】［ムーブ］これを夜にする。"
     ],
-    "full_text_for_search": "（RYO-003） 水生(すいせい) 0  領土 基础 水生 《水生》（これはあなたがカードをプレイする時、水生条件の1つとして数えられる。）【起動（領地）】［ムーブ］これを夜にする。"
+    "full_text_for_search": "（RYO-003） 水生(すいせい) 0 領土 基础 水生 《水生》（これはあなたがカードをプレイする時、水生条件の1つとして数えられる。）【起動（領地）】［ムーブ］これを夜にする。"
   },
   {
     "id": "（RYO-004）",
     "name": "森林",
     "reading": "しんりん",
     "cost": 0,
-    "conditions": "",
+    "conditions": "森",
     "type": "領土",
     "species": "基礎",
+    "scry": false,
     "stats": {
       "atk": 0,
       "def": 0
@@ -79,16 +83,17 @@
     "abilities": [
       "《森林》（これはあなたがカードをプレイする時、森林条件の1つとして数えられる。）\n【起動（領地）】［ムーブ］これを夜にする。"
     ],
-    "full_text_for_search": "（RYO-004） 森林(しんりん) 0  領土 基础 森林 《森林》（これはあなたがカードをプレイする時、森林条件の1つとして数えられる。）【起動（領地）】［ムーブ］これを夜にする。"
+    "full_text_for_search": "（RYO-004） 森林(しんりん) 0 領土 基础 森林 《森林》（これはあなたがカードをプレイする時、森林条件の1つとして数えられる。）【起動（領地）】［ムーブ］これを夜にする。"
   },
   {
     "id": "（RYO-005）",
     "name": "払暁の荒野",
     "reading": "ふつぎょうのこうや",
     "cost": 0,
-    "conditions": "",
+    "conditions": "平",
     "type": "領土",
-    "species": "",
+    "species": "夜",
+    "scry": false,
     "stats": {
       "atk": 0,
       "def": 0
@@ -107,9 +112,10 @@
     "name": "夜明けの山脈",
     "reading": "よあけのさんみゃく",
     "cost": 0,
-    "conditions": "",
+    "conditions": "山",
     "type": "領土",
-    "species": "",
+    "species": "夜",
+    "scry": false,
     "stats": {
       "atk": 0,
       "def": 0
@@ -128,9 +134,10 @@
     "name": "朝焼けの海",
     "reading": "あさやけのうみ",
     "cost": 0,
-    "conditions": "",
+    "conditions": "水",
     "type": "領土",
-    "species": "",
+    "species": "夜",
+    "scry": false,
     "stats": {
       "atk": 0,
       "def": 0
@@ -142,16 +149,17 @@
     "abilities": [
       "《水生》（これはあなたがカードをプレイする時、水生条件の1つとして数えられる。）【固有】［これが領地に出る時に適用してもよい。］これを夜状態で領地に出す。"
     ],
-    "full_text_for_search": "（RYO-007） 朝焼けの海（あさやけのうみ） 0  領土  水生,固有 《水生》（これはあなたがカードをプレイする時、水生条件の1つとして数えられる。）【固有】［これが領地に出る時に適用してもよい。］これを夜状態で領地に出す。"
+    "full_text_for_search": "（RYO-007） 朝焼けの海（あさやけのうみ） 0 領土 水生,固有 《水生》（これはあなたがカードをプレイする時、水生条件の1つとして数えられる。）【固有】［これが領地に出る時に適用してもよい。］これを夜状態で領地に出す。"
   },
   {
     "id": "（RYO-008）",
     "name": "目覚めの森",
     "reading": "めざめのもり",
     "cost": 0,
-    "conditions": "",
+    "conditions": "森",
     "type": "領土",
-    "species": "",
+    "species": "夜",
+    "scry": false,
     "stats": {
       "atk": 0,
       "def": 0
@@ -163,16 +171,17 @@
     "abilities": [
       "《森林》（これはあなたがカードをプレイする時、森林条件の1つとして数えられる。）【固有】［これが領地に出る時に適用してもよい。］これを夜状態で領地に出す。"
     ],
-    "full_text_for_search": "（RYO-008） 目覚めの森（めざめのもり） 0  領土  森林 固有 《森林》（これはあなたがカードをプレイする時、森林条件の1つとして数えられる。）【固有】［これが領地に出る時に適用してもよい。］これを夜状態で領地に出す。"
+    "full_text_for_search": "（RYO-008） 目覚めの森（めざめのもり） 0 領土 森林 固有 《森林》（これはあなたがカードをプレイする時、森林条件の1つとして数えられる。）【固有】［これが領地に出る時に適用してもよい。］これを夜状態で領地に出す。"
   },
   {
     "id": "（RYO-009）",
     "name": "平原の櫓",
     "reading": "へいげんのやぐら",
     "cost": 0,
-    "conditions": "",
+    "conditions": "平",
     "type": "領土",
-    "species": "",
+    "species": "占術",
+    "scry": true,
     "stats": {
       "atk": 0,
       "def": 0
@@ -190,9 +199,10 @@
     "name": "山脈の頂",
     "reading": "さんみゃくのいただき",
     "cost": 0,
-    "conditions": "",
+    "conditions": "山",
     "type": "領土",
-    "species": "",
+    "species": "占術",
+    "scry": true,
     "stats": {
       "atk": 0,
       "def": 0
@@ -211,9 +221,10 @@
     "name": "彼方の水平線",
     "reading": "かなたのすいへいせん",
     "cost": 0,
-    "conditions": "",
+    "conditions": "水",
     "type": "領土",
-    "species": "",
+    "species": "占術",
+    "scry": true,
     "stats": {
       "atk": 0,
       "def": 0
@@ -232,9 +243,10 @@
     "name": "森の中の大樹",
     "reading": "もりのなかのたいじゅ",
     "cost": 0,
-    "conditions": "",
+    "conditions": "森",
     "type": "領土",
-    "species": "",
+    "species": "占術",
+    "scry": true,
     "stats": {
       "atk": 0,
       "def": 0
@@ -252,9 +264,10 @@
     "name": "砂丘",
     "reading": "さきゅう",
     "cost": 0,
-    "conditions": "",
+    "conditions": "平山",
     "type": "領土",
-    "species": "",
+    "species": "ファスト",
+    "scry": false,
     "stats": {
       "atk": 0,
       "def": 0
@@ -272,9 +285,10 @@
     "name": "湿原",
     "reading": "しつげん",
     "cost": 0,
-    "conditions": "",
+    "conditions": "平水",
     "type": "領土",
-    "species": "",
+    "species": "ファスト",
+    "scry": false,
     "stats": {
       "atk": 0,
       "def": 0
@@ -292,9 +306,10 @@
     "name": "樹海",
     "reading": "じゅかい",
     "cost": 0,
-    "conditions": "",
+    "conditions": "平森",
     "type": "領土",
-    "species": "",
+    "species": "ファスト",
+    "scry": false,
     "stats": {
       "atk": 0,
       "def": 0
@@ -314,9 +329,10 @@
     "name": "渓谷",
     "reading": "けいこく",
     "cost": 0,
-    "conditions": "",
+    "conditions": "山水",
     "type": "領土",
-    "species": "",
+    "species": "ファスト",
+    "scry": false,
     "stats": {
       "atk": 0,
       "def": 0
@@ -334,9 +350,10 @@
     "name": "山林",
     "reading": "さんりん",
     "cost": 0,
-    "conditions": "",
+    "conditions": "山森",
     "type": "領土",
-    "species": "",
+    "species": "ファスト",
+    "scry": false,
     "stats": {
       "atk": 0,
       "def": 0
@@ -356,9 +373,10 @@
     "name": "沼地",
     "reading": "ぬまち",
     "cost": 0,
-    "conditions": "",
+    "conditions": "水森",
     "type": "領土",
-    "species": "",
+    "species": "ファスト",
+    "scry": false,
     "stats": {
       "atk": 0,
       "def": 0

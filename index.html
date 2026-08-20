@@ -640,23 +640,45 @@
                 const displayId = cleanDisplayId(card, cardId);
 
                 if (card) {
+                    // 🟢 領土の種別に応じたビジュアルバッジの自動作成
+                    let typeBadge = '';
+                    let borderHighlight = 'hover:border-blue-500';
+                    
+                    if (card.species === '基礎') {
+                        typeBadge = `<span class="px-1.5 py-0.5 bg-slate-800 text-slate-300 text-[9px] font-bold rounded border border-slate-700">⛰️ 基礎</span>`;
+                    } else if (card.species === '夜') {
+                        typeBadge = `<span class="px-1.5 py-0.5 bg-indigo-950/40 text-indigo-300 text-[9px] font-bold rounded border border-indigo-800/30">🌙 夜</span>`;
+                        borderHighlight = 'hover:border-indigo-500';
+                    } else if (card.species === '占術') {
+                        typeBadge = `<span class="px-1.5 py-0.5 bg-purple-950/40 text-purple-300 text-[9px] font-bold rounded border border-purple-800/30">👁️ 占術</span>`;
+                        borderHighlight = 'hover:border-purple-500';
+                    } else if (card.species === 'ファスト') {
+                        typeBadge = `<span class="px-1.5 py-0.5 bg-amber-950/40 text-amber-300 text-[9px] font-bold rounded border border-amber-800/30">⚡ 2色ファスト</span>`;
+                        borderHighlight = 'hover:border-amber-500';
+                    } else {
+                        typeBadge = `<span class="px-1.5 py-0.5 bg-slate-800 text-slate-400 text-[9px] font-bold rounded border border-slate-700">領土</span>`;
+                    }
+
                     if (isDetailed) {
-                        cardNode.className = 'relative group bg-slate-950 border border-slate-800 rounded-xl p-4 hover:border-blue-500 hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[145px]';
+                        // 👁️ 詳細表示モード：種族、バッジ、供給可能属性をはっきりと埋め込み表示
+                        cardNode.className = `relative group bg-slate-950 border border-slate-800 rounded-xl p-4 ${borderHighlight} hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[145px]`;
                         cardNode.innerHTML = `
                             <div class="flex justify-between items-start">
                                 <span class="text-[10px] text-slate-500 font-mono">${displayId}</span>
+                                ${typeBadge}
                             </div>
                             <div class="my-2">
-                                <h3 class="text-xs font-bold text-slate-200 truncate group-hover:text-blue-300 transition-colors">${card.name}</h3>
-                                <p class="text-[9px] text-slate-400 mt-0.5">領土 (${card.conditions})</p>
+                                <h3 class="text-xs font-bold text-slate-200 group-hover:text-blue-300 transition-colors">${card.name}</h3>
+                                <p class="text-[9px] text-slate-500 mt-1">供給属性: <span class="font-mono text-emerald-400 font-bold">${card.conditions}</span></p>
                             </div>
                             <div class="flex justify-between items-center text-[10px] mt-1 pt-1 border-t border-slate-900">
-                                <span class="text-blue-400 font-mono">${card.scry ? '👁️占術あり' : '⛰️通常領土'}</span>
+                                <span class="text-blue-400 font-mono">${card.scry ? '👁️占術あり (デッキ底操作)' : '⛰️通常領土'}</span>
                                 <span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full font-bold">${count}枚</span>
                             </div>
                         `;
                     } else {
-                        cardNode.className = 'relative group bg-slate-950 border border-slate-800 rounded-xl p-3 hover:border-blue-500 hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[80px]';
+                        // 👁️ 名前のみ・簡易モード
+                        cardNode.className = `relative group bg-slate-950 border border-slate-800 rounded-xl p-3 ${borderHighlight} hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[80px]`;
                         cardNode.innerHTML = `
                             <div class="flex justify-between items-start">
                                 <span class="text-[10px] text-slate-500 font-mono">${displayId}</span>
@@ -668,6 +690,7 @@
                         `;
                     }
                 } else {
+                    // 未登録領土の代替表示
                     cardNode.className = 'relative bg-slate-950 border border-rose-950 rounded-xl p-3 flex flex-col justify-between min-h-[80px]';
                     cardNode.innerHTML = `
                         <div class="flex justify-between items-start">
@@ -683,6 +706,7 @@
             });
             territoryDeckCountEl.textContent = `(${totalCount}枚)`;
         }
+
 
         function shuffle(array) {
             for (let i = array.length - 1; i > 0; i--) {
