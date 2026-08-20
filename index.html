@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アニマルカードゲーム Web確率計算機 (完全版)</title>
+    <!-- Tailwind CSS & Chart.js -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- ヘッダー -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-emerald-400 flex items-center gap-2">
+                🐾 アニマルカードゲーム Web確率計算機
+            </h1>
+            <span class="text-xs bg-slate-800 text-slate-400 px-3 py-1 rounded-full border border-slate-700 font-mono">
+                WASM-Free & Multi-JSON Fetch Engine
+            </span>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6 flex-grow w-full">
+
+        <!-- 状態・エラーログバナー -->
+        <div id="loaderStatusBanner" class="bg-amber-950/30 border border-amber-500/20 rounded-xl p-4 flex items-center justify-between text-xs text-amber-300">
+            <div class="flex items-center gap-2">
+                <span class="animate-pulse">🔄</span>
+                <span id="bannerText">カードマスターJSONを起動読み込みしています...</span>
+            </div>
+            <span id="loadProgressCount" class="font-mono bg-slate-900 px-2 py-0.5 rounded border border-slate-800">0 / 8 files</span>
+        </div>
+
+        <!-- 1. デッキインポートエリア -->
+        <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
+            <h2 class="text-base font-bold text-emerald-300 flex items-center gap-2">
+                📥 デッキJSONの読み込み
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-slate-400 mb-2">① デッキJSONファイルをアップロード</label>
+                    <input type="file" id="deckFileInput" accept=".json" 
+                        class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700 cursor-pointer border border-slate-800 p-1.5 rounded-lg bg-slate-950">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-2">またはテキスト貼り付け</label>
+                    <textarea id="deckJsonInput" rows="1" 
+                        class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs font-mono text-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        placeholder='{"mainDeck": {"20": 2}}'></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 text-xs">
+                <button id="importBtn" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-lg hover:shadow-emerald-500/20 transition-all">
+                    デッキを展開して分析準備
+                </button>
+            </div>
+        </section>
+
+        <!-- 2. シミュレーション設定 ＆ グラフ表示 -->
+        <section id="simulatorControlSection" class="hidden bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
+            <h2 class="text-base font-bold text-amber-400 flex items-center gap-2 border-b border-slate-800 pb-2">
+                🎲 確率シミュレーター (マリガン ✕ 占術領土 ✕ ターン別プレイ達成率)
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 設定パラメータ -->
+                <div class="flex flex-col justify-between space-y-4 lg:border-r border-slate-800 pr-4">
+                    <div class="space-y-1.5 text-xs text-slate-300 leading-relaxed">
+                        <p class="font-bold text-slate-400">⛰️ シミュレーション判定ルール:</p>
+                        <ul class="list-disc list-inside space-y-1 text-slate-400">
+                            <li><strong>不純物(赤)</strong>: 最初の7枚に3枚以上あると、2枚戻しても手札に残るため事故(失敗)と判定 [3]。</li>
+                            <li><strong>ムーブイン</strong>: 3T以降に場に出た2色領土は、そのターンのみコスト供給不可。次のターンから1コストとして復活。</li>
+                            <li><strong>占術領土</strong>: めくれた際、次ターンの領土をPeekし、手札のパーツに不要なら山札の底へ。</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-bold mb-1.5 text-xs">🎯 試行回数 (モンテカルロ法):</label>
+                        <select id="simRuns" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-emerald-400 font-mono focus:outline-none mb-3">
+                            <option value="10000">10,000 回 (高速)</option>
+                            <option value="50000" selected>50,000 回 (高精度)</option>
+                            <option value="100000">100,000 回 (極めて高精度)</option>
+                        </select>
+                        <button id="runSimulationBtn" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-lg shadow-lg hover:shadow-amber-500/20 transition-all text-sm flex items-center justify-center gap-2">
+                            <span>⚡ 確率を計算する</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- グラフ描画エリア (Chart.js) -->
+                <div class="lg:col-span-2 bg-slate-950 p-4 rounded-xl border border-slate-800/80 flex flex-col justify-between min-h-[250px]">
+                    <div class="flex justify-between items-center mb-2">
+                        <p class="text-xs text-slate-400 font-bold">📈 ターン別・プレイ可能率グラフ (累積確率)</p>
+                        <span id="simStatusText" class="text-[10px] text-slate-500">条件を指定して計算ボタンを押してください。</span>
+                    </div>
+                    <div class="relative w-full h-48 flex items-center justify-center">
+                        <canvas id="probabilityChart" class="w-full h-full"></canvas>
+                        <div id="chartPlaceholder" class="absolute text-slate-600 text-xs font-bold pointer-events-none">シミュレーションを実行するとグラフが表示されます</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. デッキ展開表示エリア -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <section class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
+                <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-2">
+                    <h2 class="text-base font-bold text-emerald-300">
+                        🃏 メインデッキ <span id="mainDeckCount" class="text-sm font-normal text-slate-400">(0枚)</span>
+                    </h2>
+                    <span class="text-[10px] text-slate-400">💡 カードクリック: [通常] ➔ [必須(緑)] ➔ [不純物(赤)]</span>
+                </div>
+                <div id="mainDeckGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    <p class="col-span-full text-center text-slate-500 py-12 text-sm font-bold">デッキJSONファイルをインポートしてください。</p>
+                </div>
+            </section>
+
+            <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
+                <h2 class="text-base font-bold text-blue-300 mb-4 flex justify-between items-center border-b border-slate-800 pb-2">
+                    <span>⛰️ 領土デッキ <span id="territoryDeckCount" class="text-sm font-normal text-slate-400">(0枚)</span></span>
+                </h2>
+                <div id="territoryDeckGrid" class="grid grid-cols-2 gap-4">
+                    <p class="col-span-full text-center text-slate-500 py-12 text-sm">領土デッキが表示されます。</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="border-t border-slate-800 bg-slate-950 text-center py-4 text-xs text-slate-500">
+        🐾 アニマルカードゲーム Web確率計算機 (C) 2026
+    </footer>
+
+    <!-- JavaScript 制御 -->
+    <script>
+        // アプリの状態
+        const state = {
+            mainDeck: {},       // id -> count
+            territoryDeck: {},  // id -> count
+            cardMap: new Map(), // 合体した全カードデータ
+            conditions: {}      // id -> 'must' | 'not' | 'none'
+        };
+
+        let myChart = null;
+
+        // DOM
+        const deckFileInput = document.getElementById('deckFileInput');
+        const deckJsonInput = document.getElementById('deckJsonInput');
+        const importBtn = document.getElementById('importBtn');
+        const mainDeckGrid = document.getElementById('mainDeckGrid');
+        const territoryDeckGrid = document.getElementById('territoryDeckGrid');
+        const mainDeckCountEl = document.getElementById('mainDeckCount');
+        const territoryDeckCountEl = document.getElementById('territoryDeckCount');
+        const simulatorControlSection = document.getElementById('simulatorControlSection');
+        const runSimulationBtn = document.getElementById('runSimulationBtn');
+        const simStatusText = document.getElementById('simStatusText');
+        const simRunsSelect = document.getElementById('simRuns');
+        const chartPlaceholder = document.getElementById('chartPlaceholder');
+        const bannerText = document.getElementById('bannerText');
+        const loadProgressCount = document.getElementById('loadProgressCount');
+        const loaderStatusBanner = document.getElementById('loaderStatusBanner');
+
+        // --- 起動時に 8つの JSON ファイルを非同期並行ロードして自動マージ ---
+        async function loadAllCardLists() {
+            const fileNames = [
+                'vol1.json', 'vol2.json', 'vol3.json', 'vol4.json',
+                'vol5.json', 'vol6.json', 'vol7.json', 'vol8.json'
+            ];
+
+            let loadedCount = 0;
+            try {
+                const fetchPromises = fileNames.map(file => 
+                    fetch(file)
+                        .then(res => {
+                            if (!res.ok) throw new Error(`${file} が見当たりません`);
+                            loadedCount++;
+                            loadProgressCount.textContent = `${loadedCount} / 8 files`;
+                            return res.json();
+                        })
+                        .catch(err => {
+                            console.warn(`一部のファイルがロードできませんでした: ${file}`);
+                            return []; // エラー時は空配列を返してマージを継続
+                        })
+                );
+
+                const allVolumesData = await Promise.all(fetchPromises);
+                const mergedCards = allVolumesData.flat();
+
+                state.cardMap.clear();
+                mergedCards.forEach(card => {
+                    if (card && card.id) {
+                        state.cardMap.set(card.id, card);
+                    }
+                });
+
+                if (state.cardMap.size > 0) {
+                    bannerText.textContent = `✅ データベース読み込み完了: 合計 ${state.cardMap.size} 枚のカードと紐付き可能です！`;
+                    loaderStatusBanner.classList.remove('bg-amber-950/30', 'border-amber-500/20', 'text-amber-300');
+                    loaderStatusBanner.classList.add('bg-emerald-950/30', 'border-emerald-500/20', 'text-emerald-300');
+                } else {
+                    bannerText.textContent = `⚠ JSONがありません。PCローカルではセキュリティにより読み込めないため、GitHub/Netlifyにアップロードすると機能します。`;
+                }
+
+            } catch (error) {
+                console.error("ロードエラー:", error);
+                bannerText.textContent = `🚨 カードマスターデータのロード中にエラーが発生しました。`;
+            }
+        }
+
+        // 起動時に呼び出し
+        window.addEventListener('DOMContentLoaded', loadAllCardLists);
+
+        // --- ファイル選択、またはテキストエリアからデッキ情報を読み込む ---
+        deckFileInput.addEventListener('change', (e) => {
+            const file = e.target.files;
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const parsed = JSON.parse(evt.target.result);
+                    deckJsonInput.value = JSON.stringify(parsed, null, 2);
+                    executeImport(parsed);
+                } catch (err) {
+                    alert('ファイル形式（JSON）が正しくありません。\n' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        importBtn.addEventListener('click', () => {
+            try {
+                const parsed = JSON.parse(deckJsonInput.value || '{}');
+                executeImport(parsed);
+            } catch (err) {
+                alert('JSONテキストの解析に失敗しました。カンマ忘れや不要な括弧がないか確認してください。');
+            }
+        });
+
+        function formatCardId(rawId) {
+            const num = parseInt(rawId, 10);
+            if (isNaN(num)) return rawId;
+            if (num >= 8000) return `ACG-${num}`;
+            return `ACG-${String(num).padStart(3, '0')}`;
+        }
+
+        function executeImport(deckData) {
+            state.mainDeck = {};
+            state.territoryDeck = {};
+            state.conditions = {};
+
+            if (deckData.mainDeck) {
+                Object.entries(deckData.mainDeck).forEach(([rawId, count]) => {
+                    const formattedId = formatCardId(rawId);
+                    state.mainDeck[formattedId] = count;
+                    state.conditions[formattedId] = 'none';
+                });
+            }
+
+            if (deckData.territoryDeck) {
+                Object.entries(deckData.territoryDeck).forEach(([rawId, count]) => {
+                    const formattedId = formatCardId(rawId);
+                    state.territoryDeck[formattedId] = count;
+                });
+            }
+
+            renderMainDeck();
+            renderTerritoryDeck();
+            simulatorControlSection.classList.remove('hidden');
+            updateStatusText();
+        }
+
+        function updateStatusText() {
+            const mustCards = Object.entries(state.conditions).filter(([_, type]) => type === 'must').map(([id]) => state.cardMap.get(id)?.name || id);
+            const notCards = Object.entries(state.conditions).filter(([_, type]) => type === 'not').map(([id]) => state.cardMap.get(id)?.name || id);
+
+            let text = "";
+            if (mustCards.length > 0) text += `🟢 必須: ${mustCards.join(', ')} `;
+            if (notCards.length > 0) text += `${text ? ' | ' : ''}🔴 不純物: ${notCards.join(', ')} `;
+            if (!text) text = "カードをクリックして条件を指定してください。";
+            simStatusText.textContent = text;
+        }
+
+        function renderMainDeck() {
+            mainDeckGrid.innerHTML = '';
+            let totalCount = 0;
+
+            Object.entries(state.mainDeck).forEach(([cardId, count]) => {
+                const card = state.cardMap.get(cardId);
+                totalCount += count;
+                const cardNode = document.createElement('div');
+                const cond = state.conditions[cardId] || 'none';
+                
+                let borderClass = 'border-slate-800 hover:border-emerald-500';
+                let bgClass = 'bg-slate-950';
+                let badgeHtml = '';
+
+                if (cond === 'must') {
+                    borderClass = 'border-emerald-500 ring-2 ring-emerald-500/30';
+                    bgClass = 'bg-emerald-950/20';
+                    badgeHtml = `<span class="absolute top-2 left-2 px-1.5 py-0.5 bg-emerald-500 text-slate-950 text-[8px] font-extrabold rounded shadow-md">必須</span>`;
+                } else if (cond === 'not') {
+                    borderClass = 'border-rose-500 ring-2 ring-rose-500/30';
+                    bgClass = 'bg-rose-950/20';
+                    badgeHtml = `<span class="absolute top-2 left-2 px-1.5 py-0.5 bg-rose-500 text-white text-[8px] font-extrabold rounded shadow-md">不純物</span>`;
+                }
+
+                cardNode.className = `relative group ${bgClass} border ${borderClass} rounded-xl p-3 hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[145px]`;
+                
+                if (card) {
+                    cardNode.innerHTML = badgeHtml + `
+                        <div class="flex justify-between items-start">
+                            <span class="text-[10px] text-slate-500 font-mono">${card.id}</span>
+                            <div class="flex items-center gap-1">
+                                ${card.conditions ? `<span class="px-1 text-[9px] bg-slate-800 text-yellow-400 font-bold rounded border border-slate-700">${card.conditions}</span>` : ''}
+                                <span class="w-5 h-5 flex items-center justify-center rounded-full bg-emerald-950 border border-emerald-500 text-[10px] text-emerald-300 font-extrabold">${card.cost}</span>
+                            </div>
+                        </div>
+                        <div class="my-2">
+                            <h3 class="text-xs font-bold text-slate-200 truncate group-hover:text-emerald-300 transition-colors">${card.name}</h3>
+                            <p class="text-[9px] text-slate-500 mt-0.5">${card.species || ''} ${card.type}</p>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px] mt-1 pt-1 border-t border-slate-900">
+                            <span class="text-slate-400 font-mono">${card.stats ? `⚔️${card.stats.atk} 🛡️${card.stats.def}` : '通常カード'}</span>
+                            <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">${count}枚</span>
+                        </div>
+                        <div class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 bg-slate-900 border border-slate-700 text-xs rounded-xl p-3 shadow-2xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 z-50 transform group-hover:translate-y-[-4px]">
+                            <div class="font-bold text-emerald-300 text-sm border-b border-slate-800 pb-1.5 mb-1.5 flex justify-between items-center">
+                                <span>${card.name}</span>
+                                <span class="text-[10px] text-slate-500">#${card.id}</span>
+                            </div>
+                            <div class="space-y-1 text-slate-300">
+                                <p><span class="text-slate-500">タイプ/種属:</span> ${card.type} 【${card.species || 'なし'}】</p>
+                                <p><span class="text-slate-500">条件/コスト:</span> [${card.conditions || '無'}] / ${card.cost}エネ</p>
+                                <div class="mt-2 pt-2 border-t border-slate-800 text-[10px] text-slate-400 leading-relaxed max-h-24 overflow-y-auto">
+                                    ${card.abilities ? card.abilities.join('<br>') : '効果なし'}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    cardNode.addEventListener('click', () => {
+                        if (cond === 'none') state.conditions[cardId] = 'must';
+                        else if (cond === 'must') state.conditions[cardId] = 'not';
+                        else state.conditions[cardId] = 'none';
+                        renderMainDeck();
+                        updateStatusText();
+                    });
+                } else {
+                    // データベース未登録のフォールバック
+                    cardNode.innerHTML = `
+                        <div class="flex justify-between items-start"><span class="text-[10px] text-rose-500 font-mono">${cardId}</span></div>
+                        <div class="my-2"><h3 class="text-xs font-bold text-rose-400">未登録のカード</h3></div>
+                        <div class="flex justify-end text-[10px] font-bold"><span class="bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-full text-rose-400">${count}枚</span></div>
+                    `;
+                    cardNode.addEventListener('click', () => {
+                        if (cond === 'none') state.conditions[cardId] = 'must';
+                        else if (cond === 'must') state.conditions[cardId] = 'not';
+                        else state.conditions[cardId] = 'none';
+                        renderMainDeck();
+                        updateStatusText();
+                    });
+                }
+                mainDeckGrid.appendChild(cardNode);
+            });
+            mainDeckCountEl.textContent = `(${totalCount}枚)`;
+        }
+
+        function renderTerritoryDeck() {
+            territoryDeckGrid.innerHTML = '';
+            let totalCount = 0;
+
+            Object.entries(state.territoryDeck).forEach(([cardId, count]) => {
+                const card = state.cardMap.get(cardId);
+                totalCount += count;
+                const cardNode = document.createElement('div');
+                cardNode.className = 'relative group bg-slate-950 border border-slate-800 rounded-xl p-3 hover:border-blue-500 hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[145px]';
+
+                if (card) {
+                    cardNode.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <span class="text-[10px] text-slate-500 font-mono">${card.id}</span>
+                        </div>
+                        <div class="my-2">
+                            <h3 class="text-xs font-bold text-slate-200 truncate group-hover:text-blue-300 transition-colors">${card.name}</h3>
+                            <p class="text-[9px] text-slate-500 mt-0.5">領土 (${card.conditions})</p>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px] mt-1 pt-1 border-t border-slate-900">
+                            <span class="text-blue-400 font-mono">${card.scry ? '👁️占術' : '⛰️通常'}</span>
+                            <span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full font-bold">${count}枚</span>
+                        </div>
+                    `;
+                } else {
+                    cardNode.innerHTML = `
+                        <div class="my-2"><h3 class="text-xs font-bold text-blue-400">未登録の領土</h3><p class="text-[9px] text-slate-500 mt-0.5">ID: ${cardId}</p></div>
+                        <div class="flex justify-end text-[10px] font-bold"><span class="bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full text-blue-400">${count}枚</span></div>
+                    `;
+                }
+                territoryDeckGrid.appendChild(cardNode);
+            });
+            territoryDeckCountEl.textContent = `(${totalCount}枚)`;
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // 二色領土の最適割り当てアルゴリズム
+        function canSatisfyConditions(requiredConditions, availableLands) {
+            if (requiredConditions.length === 0) return true;
+            if (availableLands.length < requiredConditions.length) return false;
+
+            function match(reqIndex, usedLandIndices) {
+                if (reqIndex === requiredConditions.length) return true;
+                const reqColor = requiredConditions[reqIndex];
+
+                for (let i = 0; i < availableLands.length; i++) {
+                    if (usedLandIndices.has(i)) continue;
+                    if (availableLands[i].includes(reqColor)) {
+                        usedLandIndices.add(i);
+                        if (match(reqIndex + 1, usedLandIndices)) return true;
+                        usedLandIndices.delete(i);
+                    }
+                }
+                return false;
+            }
+            return match(0, new Set());
+        }
+
+        function getNeededColors(mustCardObjects, activeTerritories) {
+            let allRequired = [];
+            mustCardObjects.forEach(card => {
+                if (card && card.conditions) {
+                    allRequired = allRequired.concat(card.conditions.split(''));
+                }
+            });
+
+            let availableColors = [];
+            activeTerritories.forEach(land => {
+                if (land && land.conditions) {
+                    availableColors = availableColors.concat(land.conditions.split(''));
+                }
+            });
+
+            let needed = [];
+            allRequired.forEach(color => {
+                if (!availableColors.includes(color)) {
+                    needed.push(color);
+                }
+            });
+            return needed;
+        }
+
+        // --- シミュレーションコア ---
+        runSimulationBtn.addEventListener('click', () => {
+            const runs = parseInt(simRunsSelect.value, 10);
+            const mustIds = Object.entries(state.conditions).filter(([_, type]) => type === 'must').map(([id]) => id);
+            const notIds = Object.entries(state.conditions).filter(([_, type]) => type === 'not').map(([id]) => id);
+
+            if (mustIds.length === 0) {
+                alert("必須カード(緑枠)を少なくとも1枚指定してください。");
+                return;
+            }
+
+            // メインデッキ・領土デッキのプール構築
+            let mainDeckArray = [];
+            let mainTotal = 0;
+            Object.entries(state.mainDeck).forEach(([id, count]) => {
+                mainTotal += count;
+                for (let i = 0; i < count; i++) mainDeckArray.push(id);
+            });
+            while (mainDeckArray.length < 40) mainDeckArray.push('ACG-DUMMY');
+
+            let territoryDeckArray = [];
+            Object.entries(state.territoryDeck).forEach(([id, count]) => {
+                const card = state.cardMap.get(id) || { id: id, name: '領土', conditions: '無', scry: false };
+                for (let i = 0; i < count; i++) {
+                    territoryDeckArray.push({...card});
+                }
+            });
+            while (territoryDeckArray.length < 10) {
+                territoryDeckArray.push({ id: 'DUMMY-L', name: 'ダミー領土', conditions: '無', scry: false });
+            }
+
+            runSimulationBtn.disabled = true;
+            runSimulationBtn.innerHTML = `<span>⏳ 領土成長シミュレーション計算中...</span>`;
+
+            setTimeout(() => {
+                const mustCardObjects = mustIds.map(id => state.cardMap.get(id)).filter(Boolean);
+                let successCounts = Array(10).fill(0);
+
+                for (let run = 0; run < runs; run++) {
+                    const shuffledMain = shuffle([...mainDeckArray]);
+                    const initialDraw = shuffledMain.slice(0, 7);
+
+                    // Step 1: 初手条件チェック
+                    let hasAllMust = mustIds.every(id => initialDraw.includes(id));
+                    if (!hasAllMust) continue;
+
+                    let garnetCount = initialDraw.filter(id => notIds.includes(id)).length;
+                    if (garnetCount > 2) continue; // 不純物が手札に残り事故
+
+                    // Step 2: ターン別領土成長・占術シミュレーション
+                    const shuffledTerritory = shuffle([...territoryDeckArray]);
+                    let activeTerritories = [];
+
+                    for (let T = 1; T <= 10; T++) {
+                        let currentLand = shuffledTerritory[T - 1];
+                        
+                        activeTerritories.push({
+                            ...currentLand,
+                            turnPlayed: T
+                        });
+
+                        // 占術効果 (めくった領土がScryかつ、まだデッキに次がある場合)
+                        if (currentLand.scry && T < shuffledTerritory.length) {
+                            let nextLandIndex = T; 
+                            let nextLand = shuffledTerritory[nextLandIndex];
+                            
+                            let neededColors = getNeededColors(mustCardObjects, activeTerritories);
+                            let nextLandColors = nextLand.conditions ? nextLand.conditions.split('') : [];
+
+                            let isUseful = nextLandColors.some(color => neededColors.includes(color));
+                            if (!isUseful) {
+                                shuffledTerritory.splice(nextLandIndex, 1);
+                                shuffledTerritory.push(nextLand); // 底へ
+                            }
+                        }
+
+                        // プレイ可否判定 (必須カードすべてがプレイ可能か)
+                        let allPlayable = mustCardObjects.every(card => {
+                            let reqColors = card.conditions ? card.conditions.split('') : [];
+                            let availColors = activeTerritories.map(land => land.conditions ? land.conditions.split('') : []);
+                            let conditionsMet = canSatisfyConditions(reqColors, availColors);
+
+                            let availCost = 0;
+                            activeTerritories.forEach(land => {
+                                const isTwoColor = land.conditions && land.conditions.length >= 2;
+                                const isMoveIn = isTwoColor && T >= 3 && land.turnPlayed === T;
+                                if (!isMoveIn) availCost += 1;
+                            });
+                            let costMet = availCost >= card.cost;
+
+                            return conditionsMet && costMet;
+                        });
+
+                        if (allPlayable) {
+                            for (let s = T - 1; s < 10; s++) {
+                                successCounts[s]++;
+                            }
+                            break; 
+                        }
+                    }
+                }
+
+                const probabilities = successCounts.map(count => ((count / runs) * 100).toFixed(1));
+
+                chartPlaceholder.classList.add('hidden');
+                drawChart(probabilities);
+
+                runSimulationBtn.disabled = false;
+                runSimulationBtn.innerHTML = `<span>⚡ 確率を計算する</span>`;
+            }, 50);
+        });
+
+        function drawChart(data) {
+            const ctx = document.getElementById('probabilityChart').getContext('2d');
+            if (myChart) myChart.destroy();
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10'],
+                    datasets: [{
+                        label: '累積プレイ可能率 (%)',
+                        data: data,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fbbf24',
+                        pointRadius: 4,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: 0, max: 100,
+                            grid: { color: '#334155' },
+                            ticks: { color: '#94a3b8', font: { family: 'monospace' } }
+                        },
+                        x: {
+                            grid: { color: '#334155' },
+                            ticks: { color: '#94a3b8', font: { family: 'monospace' } }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
