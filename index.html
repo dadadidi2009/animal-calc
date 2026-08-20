@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アニマルカードゲーム Web確率計算機 ver 0.2608200528</title>
+    <title>アニマルカードゲーム Web確率計算機 ver 0.2608200536</title>
     <!-- Tailwind CSS & Chart.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -25,7 +25,7 @@
             <h1 class="text-xl font-bold text-emerald-400 flex items-center gap-2">
                 🐾 アニマルカードゲーム Web確率計算機
                 <span class="text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono">
-                    ver 0.2608200528
+                    ver 0.2608200536
                 </span>
             </h1>
             <span class="text-xs bg-slate-800 text-slate-400 px-3 py-1 rounded-full border border-slate-700 font-mono">
@@ -58,22 +58,27 @@
             <h2 class="text-base font-bold text-emerald-300 flex items-center gap-2">
                 📥 デッキJSONの読み込み
             </h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                <div class="md:col-span-2">
-                    <label class="block text-xs font-bold text-slate-400 mb-2">① デッキJSONファイルをアップロード (★テキスト読み込み限定版)</label>
-                    <input type="file" id="deckFileInput" accept=".json" 
-                        class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700 cursor-pointer border border-slate-800 p-1.5 rounded-lg bg-slate-950">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                <div class="md:col-span-2 flex flex-col sm:flex-row gap-3 items-end">
+                    <div class="flex-grow w-full">
+                        <label class="block text-xs font-bold text-slate-400 mb-2">① デッキJSONファイルを選択</label>
+                        <input type="file" id="deckFileInput" accept=".json" 
+                            class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700 cursor-pointer border border-slate-800 p-1.5 rounded-lg bg-slate-950">
+                    </div>
+                    <button id="loadTextBtn" class="w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg border border-slate-700 transition-all text-xs h-[38px] whitespace-nowrap">
+                        📄 ファイルのテキストを読み込む
+                    </button>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-2">またはテキスト貼り付け</label>
+                <div class="w-full">
+                    <label class="block text-xs font-bold text-slate-400 mb-2">またはテキスト直接貼り付け (②)</label>
                     <textarea id="deckJsonInput" rows="1" 
-                        class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs font-mono text-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs font-mono text-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 h-[38px] resize-none"
                         placeholder='{"mainDeck": {"20": 2}}'></textarea>
                 </div>
             </div>
-            <div class="flex justify-end gap-2 text-xs">
-                <button id="importBtn" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-lg hover:shadow-emerald-500/20 transition-all">
-                    デッキを展開して分析準備
+            <div class="flex justify-end gap-2 text-xs pt-2">
+                <button id="importBtn" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-lg hover:shadow-emerald-500/20 transition-all">
+                    デッキを展開して分析準備 (③)
                 </button>
             </div>
         </section>
@@ -165,6 +170,7 @@
         // DOM
         const deckFileInput = document.getElementById('deckFileInput');
         const deckJsonInput = document.getElementById('deckJsonInput');
+        const loadTextBtn = document.getElementById('loadTextBtn');
         const importBtn = document.getElementById('importBtn');
         const mainDeckGrid = document.getElementById('mainDeckGrid');
         const territoryDeckGrid = document.getElementById('territoryDeckGrid');
@@ -180,7 +186,7 @@
         const fileStatusGrid = document.getElementById('fileStatusGrid');
         const bannerEmoji = document.getElementById('bannerEmoji');
 
-        // --- 🛠️ 【表記揺れ標準キー変換】（全角カッコ除去＆配列参照バグ完全修正済） ---
+        // --- 🛠️ 【表記揺れ標準キー変換】（ match[1] / match[2] バグ完全修正済） ---
         function normalizeCardListId(rawId) {
             if (rawId === undefined || rawId === null) return "";
             let s = rawId.toString().trim();
@@ -198,8 +204,8 @@
             // プレフィックスとカード番号を抽出
             const match = s.match(/^(ACG|BP\d|BP|RYO)[-_]?(\d+)/i);
             if (match) {
-                const prefix = match[1].toUpperCase(); // 🟢 配列インデックス[1]を指定！
-                const num = parseInt(match[2], 10);     // 🟢 配列インデックス[2]を指定！
+                const prefix = match[1].toUpperCase(); // 🟢 プレフィックス文字列を正しく取得
+                const num = parseInt(match[2], 10);     // 🟢 番号部分の数値を正しく取得
                 return `${prefix}-${num}`;
             }
             return s.toUpperCase();
@@ -351,23 +357,38 @@
             }
         }
 
-        // --- ① デッキ読み込み処理（FileListの0番目を正しく取得するバグ完全修正済） ---
+        // --- 🛠️ 【③ バグ切り分け：ファイル読込ボタンに処理を完全独立】 ---
+        let selectedFile = null;
+        
+        // ファイルの選択を監視するだけ
         deckFileInput.addEventListener('change', (e) => {
             const files = e.target.files;
-            if (!files || files.length === 0) return;
-            const file = files; // 🟢 【バグ修正】FileListから正しくインデックス0を指定！
+            if (files && files.length > 0) {
+                selectedFile = files; // 🟢 FileListから1つのFileオブジェクトを確実に取得
+            } else {
+                selectedFile = null;
+            }
+        });
 
+        // テキスト読込ボタン押下で初めてテキストエリアにロードする
+        loadTextBtn.addEventListener('click', () => {
+            if (!selectedFile) {
+                alert("ファイルが選択されていません。先に「ファイルを選択」からデッキJSONファイルを選んでください。");
+                return;
+            }
+            
             const reader = new FileReader();
             reader.onload = function(evt) {
                 deckJsonInput.value = evt.target.result;
+                alert("ファイルのテキスト読み込みに成功しました！\n右側のテキスト貼り付け欄に中身が表示されています。\n\n「デッキを展開して分析準備 (③)」ボタンを押してカードを並べてみてください。");
             };
-            reader.onerror = function(err) {
-                alert('ファイルの読み取りに失敗しました。');
+            reader.onerror = function() {
+                alert("ファイルの読み取りに失敗しました。");
             };
-            reader.readAsText(file); 
+            reader.readAsText(selectedFile); 
         });
 
-        // 展開実行ボタン
+        // 展開実行ボタン (③)
         importBtn.addEventListener('click', () => {
             try {
                 const parsed = robustJsonParse(deckJsonInput.value || '{}'); 
@@ -458,6 +479,11 @@
                 const displayId = cleanDisplayId(card, cardId);
 
                 if (card) {
+                    // 🟢 【② 修正】abilitiesの配列・文字列判定を厳格化し、TypeError: card.abilities.join is not a function を完全回避
+                    const abilitiesHtml = card.abilities 
+                        ? (Array.isArray(card.abilities) ? card.abilities.join('<br>') : card.abilities.toString()) 
+                        : '効果なし';
+
                     cardNode.innerHTML = badgeHtml + `
                         <div class="flex justify-between items-start">
                             <span class="text-[10px] text-slate-500 font-mono">${displayId}</span>
@@ -483,7 +509,7 @@
                                 <p><span class="text-slate-500">タイプ:</span> ${card.type} 【${card.species || 'なし'}】</p>
                                 <p><span class="text-slate-500">条件:</span> [${card.conditions || '無'}] / ${card.cost}エネ</p>
                                 <div class="mt-2 pt-2 border-t border-slate-800 text-[10px] text-slate-400 leading-relaxed max-h-24 overflow-y-auto">
-                                    ${card.abilities ? card.abilities.join('<br>') : '効果なし'}
+                                    ${abilitiesHtml}
                                 </div>
                             </div>
                         </div>
