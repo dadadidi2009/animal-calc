@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アニマルカードゲーム Web確率計算機 ver 0.2608260256</title>
+    <title>アニマルカードゲーム Web確率計算機 ver 0.2608260306</title>
     <!-- Tailwind CSS & Chart.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -32,7 +32,7 @@
             <h1 class="text-xl font-bold text-emerald-400 flex items-center gap-2">
                 🐾 アニマルカードゲーム Web確率計算機
                 <span class="text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono">
-                    ver 0.2608260256
+                    ver 0.2608260306
                 </span>
             </h1>
             <span class="text-xs bg-slate-800 text-slate-400 px-3 py-1 rounded-full border border-slate-700 font-mono hidden sm:inline">
@@ -88,7 +88,7 @@
             </div>
         </details>
 
-        <!-- 3. デッキ展開表示エリア（要望①：親のdetailsで同時に展開／折りたたみ） -->
+        <!-- 3. デッキ展開表示エリア -->
         <details class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4" open>
             <summary class="flex justify-between items-center cursor-pointer select-none border-b border-slate-800 pb-2">
                 <h2 class="text-base font-bold text-emerald-300 flex items-center gap-2">
@@ -158,7 +158,7 @@
                 <!-- パラメータ調整エリア -->
                 <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-4">
                     
-                    <!-- 目標確率からの逆算セクション（デッキ全体の枚数Nを追加） -->
+                    <!-- 目標確率からの逆算セクション -->
                     <div class="space-y-1.5 pb-3 border-b border-slate-800/80">
                         <label class="block text-[11px] font-bold text-indigo-300">🔍 目標確率から最低投入枚数を逆算</label>
                         <div class="grid grid-cols-3 gap-1.5">
@@ -704,35 +704,27 @@
 
         let territoryYCount = 1;
 
-        // 【修正】判定用略称への内部正規化（内部処理用）
+        // 【判定用正規化】正式名称（平野、山岳、水生、森林）または略称から1文字の判定コードへ変換
         function normalizeConditionString(cond) {
             if (!cond) return "";
             let s = cond.toString().trim();
-            const map = { '平野': '平', '山岳': '山', '水生': '水', '森林': '森', '平': '平', '山': '山', '水': '水', '森': '森', '夜': '夜' };
             let result = "";
             for (let i = 0; i < s.length; i++) {
                 let char = s[i];
-                result += map[char] || char;
+                if (char === '平' || s.substr(i, 2) === '平野') { result += '平'; if (s.substr(i, 2) === '平野') i++; }
+                else if (char === '山' || s.substr(i, 2) === '山岳') { result += '山'; if (s.substr(i, 2) === '山岳') i++; }
+                else if (char === '水' || s.substr(i, 2) === '水生' || s.substr(i, 2) === '水域') { result += '水'; if (s.substr(i, 2) === '水生' || s.substr(i, 2) === '水域') i++; }
+                else if (char === '森' || s.substr(i, 2) === '森林') { result += '森'; if (s.substr(i, 2) === '森林') i++; }
+                else if (char === '夜') { result += '夜'; }
+                else { result += char; }
             }
-            result = result.replace(/水域/g, '水');
             return result;
         }
 
-        // 【追加】表示用：略称（平・山・水・森）をメイン・領土デッキ内で正式名称等に戻さず「1文字の略称」として表示するためのフォーマッター
+        // 【表示用フォーマッター】カード詳細・領土デッキ内では省略形（1文字）で表示（条件1を満たす）
         function formatDisplayCondition(cond) {
             if (!cond) return "";
-            let norm = normalizeConditionString(cond);
-            // デッキ内表示では略称の1文字で表示させるための変換
-            let displayStr = "";
-            for (let i = 0; i < norm.length; i++) {
-                let c = norm[i];
-                if (['平', '山', '水', '森', '夜'].includes(c)) {
-                    displayStr += c;
-                } else {
-                    displayStr += c;
-                }
-            }
-            return displayStr;
+            return normalizeConditionString(cond);
         }
 
         document.getElementById('btnDecTerritoryY').addEventListener('click', () => {
@@ -772,32 +764,29 @@
                     });
                 }
             });
-            while (territoryDeckArray.length < 10) {
-                territoryDeckArray.push({ 
-                    id: 'DUMMY-L', 
-                    name: 'ダミー領土', 
-                    conditions: '平', 
-                    normalizedConditions: '平',
-                    scry: false 
-                });
-            }
             return territoryDeckArray;
         }
 
         function updateTerritoryProbabilities() {
             territoryProbTableBody.innerHTML = '';
             const territoryDeckArray = getTerritoryDeckArray();
+            const totalTerritoryCount = territoryDeckArray.length;
+
+            if (totalTerritoryCount === 0) {
+                territoryProbTableBody.innerHTML = `<tr><td colspan="3" class="text-center py-6 text-slate-500">領土デッキにカードがありません。</td></tr>`;
+                return;
+            }
+
             const maxTurn = extendTurnsCheck.checked ? 10 : 5;
             const trials = parseInt(territorySimRunsSelect.value, 10) || 50000;
             const currentMode = territoryModeSelect.value;
 
             if (currentMode === 'single') {
-                // セレクトボックスの選択値（「平野」など）を内部の略称1文字（「平」など）に変換して検索・条件判定を行わせる
-                const rawAttr = targetAttributeSelect.value || '平野';
-                const selectedAttr = normalizeConditionString(rawAttr); // 例: 「平野」→「平」
+                // セレクトボックスの選択値（「平野」など）から表示用名称と検索用コードを取得
+                const rawAttr = targetAttributeSelect.value || '平野'; // 条件2（画面表示：正式名称）
+                const selectedAttr = normalizeConditionString(rawAttr); // 条件3（内部判定：略称「平」等）
                 const requiredY = territoryYCount;
 
-                // 枠内ユーザー表示は「平野条件」などの正式名称を維持
                 territoryTableTitle.textContent = `📈 ターン別・領土「${rawAttr}条件」到達確率 (${requiredY}枚以上)`;
 
                 let successCounts = Array(maxTurn).fill(0);
@@ -1131,7 +1120,6 @@
                     });
                 }
 
-                // デッキを読み込んだら、計算パラメータ(N)と逆算エリアのデッキ枚数に自動反映
                 if (mainTotal > 0) {
                     quickNInput.value = mainTotal;
                     revNInput.value = mainTotal;
@@ -1204,7 +1192,6 @@
                         ? (Array.isArray(card.abilities) ? card.abilities.join('<br>') : card.abilities.toString()) 
                         : '効果なし';
                     
-                    // デッキ内表示では略称の1文字で表示させる
                     const displayConditions = card.conditions ? formatDisplayCondition(card.conditions) : '';
 
                     if (isDetailed) {
@@ -1494,24 +1481,26 @@
                             hand.push(drawPile.shift());
                         }
 
-                        let currentLand = shuffledTerritory[T - 1];
-                        activeTerritories.push({
-                            ...currentLand,
-                            turnPlayed: T
-                        });
+                        if (T - 1 < shuffledTerritory.length) {
+                            let currentLand = shuffledTerritory[T - 1];
+                            activeTerritories.push({
+                                ...currentLand,
+                                turnPlayed: T
+                            });
 
-                        if (currentLand.scry && T < shuffledTerritory.length) {
-                            let nextLandIndex = T; 
-                            let nextLand = shuffledTerritory[nextLandIndex];
-                            
-                            let neededColors = getNeededColors(mustAndCardObjects, activeTerritories);
-                            let nextNorm = nextLand.normalizedConditions || normalizeConditionString(nextLand.conditions);
-                            let nextLandColors = nextNorm ? nextNorm.split('') : [];
+                            if (currentLand.scry && T < shuffledTerritory.length) {
+                                let nextLandIndex = T; 
+                                let nextLand = shuffledTerritory[nextLandIndex];
+                                
+                                let neededColors = getNeededColors(mustAndCardObjects, activeTerritories);
+                                let nextNorm = nextLand.normalizedConditions || normalizeConditionString(nextLand.conditions);
+                                let nextLandColors = nextNorm ? nextNorm.split('') : [];
 
-                            let isUseful = nextLandColors.some(color => neededColors.includes(color));
-                            if (!isUseful) {
-                                shuffledTerritory.splice(nextLandIndex, 1);
-                                shuffledTerritory.push(nextLand); 
+                                let isUseful = nextLandColors.some(color => neededColors.includes(color));
+                                if (!isUseful) {
+                                    shuffledTerritory.splice(nextLandIndex, 1);
+                                    shuffledTerritory.push(nextLand); 
+                                }
                             }
                         }
 
