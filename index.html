@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アニマルカードゲーム Web確率計算機 ver 0.2608242347</title>
+    <title>アニマルカードゲーム Web確率計算機 ver 0.260825</title>
     <!-- Tailwind CSS & Chart.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -25,7 +25,7 @@
             <h1 class="text-xl font-bold text-emerald-400 flex items-center gap-2">
                 🐾 アニマルカードゲーム Web確率計算機
                 <span class="text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono">
-                    ver 0.2608240714
+                    ver 0.260825
                 </span>
             </h1>
             <span class="text-xs bg-slate-800 text-slate-400 px-3 py-1 rounded-full border border-slate-700 font-mono">
@@ -105,7 +105,7 @@
             </div>
             <p class="text-xs text-slate-400 leading-relaxed">
                 モンテカルロ法ではなく数学的公式（超幾何分布）を用いて、指定枚数引いた時の確率を瞬時に一覧表示します。<br>
-                下のメインデッキから任意のカードをクリックすると、そのカードの投入枚数(K)と現在のデッキ総数(N)が自動でここにセットされます。
+                下のメインデッキから任意のカードをクリックし、<span class="text-indigo-400 font-bold">青色の「必須(OR)」</span>に指定すると、その合計投入枚数(K)が自動でここにセットされます。
             </p>
 
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
@@ -113,7 +113,7 @@
                 <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-4">
                     <p class="text-xs font-bold text-slate-300 border-b border-slate-800/60 pb-1.5 flex justify-between">
                         <span>⚙️ 計算パラメータ</span>
-                        <span id="quickCardNameLabel" class="text-emerald-400 truncate max-w-[150px] font-sans">自由入力モード</span>
+                        <span id="quickCardNameLabel" class="text-indigo-400 truncate max-w-[130px] font-sans">自由入力モード</span>
                     </p>
                     
                     <!-- デッキ枚数 N -->
@@ -158,6 +158,24 @@
                             </button>
                         </div>
                     </div>
+
+                    <!-- 【新規】目標確率からの逆算 -->
+                    <div class="space-y-1.5 pt-4 border-t border-slate-800/60 mt-3">
+                        <label class="block text-[11px] font-bold text-indigo-300">🔍 目標確率から最低投入枚数を逆算</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] text-slate-400">引く枚数(X)</label>
+                                <input type="number" id="revXInput" value="7" min="1" max="100" class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-center text-emerald-400 font-mono focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-slate-400">目標確率(%)</label>
+                                <input type="number" id="revPInput" value="80" min="1" max="100" class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-center text-emerald-400 font-mono focus:outline-none">
+                            </div>
+                        </div>
+                        <button id="calcRevKBtn" class="w-full mt-1 py-1.5 bg-indigo-600/60 hover:bg-indigo-500 border border-indigo-500/50 text-indigo-100 font-bold rounded text-xs transition-all">最低投入枚数を計算</button>
+                        <div id="revResult" class="hidden"></div>
+                    </div>
+
                 </div>
 
                 <!-- 確率一覧テーブル (7枚目以上に特化) -->
@@ -166,7 +184,7 @@
                         <span>📈 ドロー枚数(X)ごとの確率一覧</span>
                         <span class="text-[10px] text-slate-500 font-bold">※現実的な7枚（初手）〜20枚ドローのみ表示中</span>
                     </p>
-                    <div class="max-h-[310px] overflow-y-auto pr-1">
+                    <div class="max-h-[360px] overflow-y-auto pr-1">
                         <table class="w-full text-left border-collapse text-xs">
                             <thead>
                                 <tr class="border-b border-slate-800/60 text-slate-500 font-bold text-[10px] uppercase tracking-wider">
@@ -180,32 +198,6 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 🔍 【バグ切り分け専用】純粋ファイルテキスト読み込みチェッカー -->
-        <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
-            <h2 class="text-base font-bold text-sky-400 flex items-center gap-2">
-                🔍 【バグ切り分け専用】純粋ファイルテキスト読み込みチェッカー
-            </h2>
-            <p class="text-xs text-slate-400 leading-relaxed">
-                ※このエリアは、アップロードされたファイルをブラウザが正常に読み込めているかを単体で確認するための検証エリアです。既存の動作に影響を与えません。
-            </p>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                <div class="space-y-3">
-                    <label class="block text-xs font-bold text-slate-400">ファイルをアップロード（検証専用）</label>
-                    <input type="file" id="debugFileInput" accept=".json" 
-                        class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700 cursor-pointer border border-slate-800 p-1.5 rounded-lg bg-slate-950">
-                    <button id="debugLoadBtn" class="px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-lg shadow-lg transition-all text-xs">
-                        📄 このファイルを読み込んでテキスト化する
-                    </button>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-2">読み込まれたプレーンテキスト出力先</label>
-                    <textarea id="debugTextOutput" rows="6" readonly
-                        class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs font-mono text-sky-400 focus:outline-none h-[120px] overflow-y-auto"
-                        placeholder="ファイルを選択して左の読み込みボタンを押すと、ここへ中身のテキストがそのまま表示されます。"></textarea>
                 </div>
             </div>
         </section>
@@ -225,6 +217,7 @@
                             <li><strong>不純物(赤)</strong>: 最初の7枚に3枚以上あると、2枚戻しても手札に残るため事故(失敗)と判定。</li>
                             <li><strong>ムーブイン</strong>: 3T以降に場に出た2色領土は、そのターンのみコスト供給不可。次のターンから1コストとして復活。</li>
                             <li><strong>占術領土</strong>: めくれた際、次ターンの領土をPeekし、手札のパーツに不要なら山札の底へ。</li>
+                            <li><span class="text-emerald-400">必須(AND)</span>のみシミュレーションのプレイ目標として扱われます。</li>
                         </ul>
                     </div>
                     <div>
@@ -261,7 +254,7 @@
                     <h2 class="text-base font-bold text-emerald-300">
                         🃏 メインデッキ <span id="mainDeckCount" class="text-sm font-normal text-slate-400">(0枚)</span>
                     </h2>
-                    <span class="text-[10px] text-slate-400">💡 カードクリック: 確率特化計算機に投入枚数をセット！</span>
+                    <span class="text-[10px] text-slate-400">💡 カードクリックで判定条件を切替！</span>
                 </div>
                 <div id="mainDeckGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     <p class="col-span-full text-center text-slate-500 py-12 text-sm font-bold">デッキJSONファイルをインポートしてください。</p>
@@ -289,7 +282,7 @@
             mainDeck: {},       
             territoryDeck: {},  
             cardMap: new Map(), 
-            conditions: {}      
+            conditions: {}      // 'none' | 'must_and' | 'must_or' | 'not'
         };
 
         let myChart = null;
@@ -376,12 +369,10 @@
 
             quickProbTableBody.innerHTML = '';
 
-            // 表示をスッキリさせるため、「7枚目（初期手札）」〜「20枚目」のみを表示ループ
             for (let X = 7; X <= 20; X++) {
                 const prob = calculateHypergeometric(N, K, X, Y, type);
                 const percent = (prob * 100).toFixed(1);
 
-                // アニマルカードゲームのメインデッキ換算ルール（初手7枚）の補足ラベル作成
                 let comment = '';
                 if (X === 7) comment = ' (初期手札)';
                 else if (X > 7) comment = ` (${X - 6}T目ドロー)`;
@@ -411,9 +402,8 @@
             recalculateQuickProbabilities();
         });
         quickKInput.addEventListener('input', () => {
-            // YがKを超えないように調整
             const K = parseInt(quickKInput.value, 10) || 0;
-            if (quickParams.Y > K) {
+            if (quickParams.Y > K && K > 0) {
                 quickParams.Y = Math.max(1, K);
                 quickYValue.textContent = `${quickParams.Y} 枚`;
             }
@@ -434,8 +424,7 @@
         document.getElementById('btnDecK').addEventListener('click', () => {
             const val = Math.max(0, (parseInt(quickKInput.value, 10) || 0) - 1);
             quickKInput.value = val;
-            // YがKを超えないように調整
-            if (quickParams.Y > val) {
+            if (quickParams.Y > val && val > 0) {
                 quickParams.Y = Math.max(1, val);
                 quickYValue.textContent = `${quickParams.Y} 枚`;
             }
@@ -473,22 +462,56 @@
             recalculateQuickProbabilities();
         });
 
+        // --- 新規追加：目標確率からの逆算ロジック ---
+        const revXInput = document.getElementById('revXInput');
+        const revPInput = document.getElementById('revPInput');
+        const calcRevKBtn = document.getElementById('calcRevKBtn');
+        const revResult = document.getElementById('revResult');
+
+        calcRevKBtn.addEventListener('click', () => {
+            const N = Math.max(1, parseInt(quickNInput.value, 10) || 40);
+            const X = Math.max(1, parseInt(revXInput.value, 10) || 7);
+            const targetP = Math.max(0, Math.min(100, parseFloat(revPInput.value) || 80)) / 100;
+            const Y = quickParams.Y;
+            const type = quickParams.type;
+
+            let foundK = -1;
+            let foundProb = 0;
+            
+            // Y枚引くには最低でも投入枚数KはY以上必要
+            for (let k = Y; k <= N; k++) {
+                let p = calculateHypergeometric(N, k, X, Y, type);
+                if (p >= targetP) {
+                    foundK = k;
+                    foundProb = p;
+                    break;
+                }
+            }
+
+            revResult.classList.remove('hidden');
+            if (foundK !== -1) {
+                revResult.innerHTML = `➡ 最低投入枚数: <span class="text-emerald-300 text-sm">${foundK}枚</span> (${(foundProb * 100).toFixed(1)}%)`;
+                revResult.className = "text-[11px] font-sans font-bold text-emerald-400 text-center mt-2";
+            } else {
+                revResult.textContent = `➡ 達成不可能 (最大枚数でも届きません)`;
+                revResult.className = "text-[11px] font-sans font-bold text-rose-400 text-center mt-2";
+            }
+        });
+
+
         // --- 🛠️ 【表記揺れ標準キー変換】 ---
         function normalizeCardListId(rawId) {
             if (rawId === undefined || rawId === null) return "";
             let s = rawId.toString().trim();
             
-            // 全角英数字を半角にクレンジング
             s = s.replace(/[Ａ-Ｚａ-ｚ０-９ー−]/g, (m) => {
                 const c = m.charCodeAt(0);
                 if (c === 12540 || c === 8722) return '-';
                 return String.fromCharCode(c - 0xFEE0);
             });
 
-            // カッコや不要記号を取り除く
             s = s.replace(/[（）\(\)\[\]\{\}‘’]/g, '');
 
-            // プレフィックスとカード番号を抽出
             const match = s.match(/^(ACG|BP\d|BP|RYO)[-_]?(\d+)/i);
             if (match) {
                 const prefix = match[1].toUpperCase(); 
@@ -498,36 +521,32 @@
             return s.toUpperCase();
         }
 
-        // --- 🛠️ 【デッキ側数値IDからのデコード（誤登録バグ補正機能付き）】 ---
+        // --- 🛠️ 【デッキ側数値IDからのデコード】 ---
         function normalizeDeckId(rawId) {
             let num = parseInt(rawId, 10);
             if (isNaN(num)) {
                 return normalizeCardListId(rawId);
             }
 
-            // BP1-038がBP1-039 (ID 5039) として誤登録されている問題の自動補正
             if (num === 5039) {
                 console.log("🛠️ ワークアラウンド適用: デッキID 5039 (BP1-039) を BP1-038 に自動補正しました。");
                 return "BP1-38";
             }
 
             if (num >= 8000 && num < 9000) {
-                // 領土デッキ (8001〜8018) -> RYO-x
                 const ryoNum = num - 8000;
                 return `RYO-${ryoNum}`;
             } else if (num >= 5000 && num < 6000) {
-                // ブースターパックシリーズ (BP1〜BP5)
                 const y = Math.floor((num - 5000) / 100); 
                 const bpNum = y + 1; 
                 const cardNum = (num - 5000) % 100;
                 return `BP${bpNum}-${cardNum}`;
             } else {
-                // ACGシリーズ (1〜999) -> ACG-x
                 return `ACG-${num}`;
             }
         }
 
-        // --- 起動時に 8つの JSON ファイルを非同期並行ロードして自動マージ (堅牢化版) ---
+        // --- 起動時に 8つの JSON ファイルを非同期並行ロードして自動マージ ---
         async function loadAllCardLists() {
             try {
                 const fileNames = [
@@ -585,12 +604,7 @@
                                 dot.classList.remove('bg-slate-700', 'animate-pulse');
                                 dot.classList.add('bg-rose-500');
                                 
-                                let errorMsg = '読込失敗';
-                                if (window.location.protocol === 'file:') {
-                                    errorMsg = 'ローカル制限';
-                                } else {
-                                    errorMsg = err.message.includes('404') ? '404なし' : 'JSONエラー';
-                                }
+                                let errorMsg = window.location.protocol === 'file:' ? 'ローカル制限' : '読込失敗';
                                 statusDiv.querySelector('span:last-child').textContent = `${file} (${errorMsg})`;
                             }
                             return [];
@@ -617,69 +631,48 @@
                     bannerEmoji.textContent = '🚨';
                     bannerEmoji.classList.remove('animate-pulse');
                     if (window.location.protocol === 'file:') {
-                        bannerText.textContent = `PC上で直接ファイルをダブルクリックして起動しているため、ブラウザ制限(CORS)によりマスターデータをロードできません。GitHub Pages等のウェブサーバーにアップするか、ローカルサーバーを立ち上げてアクセスしてください。`;
+                        bannerText.textContent = `PC上で直接ファイルを起動しているため、ブラウザ制限によりマスターデータをロードできません。`;
                         bannerText.className = 'font-bold text-rose-400 text-sm';
                     } else {
-                        bannerText.textContent = `警告：サーバー上にJSONマスターファイルが見つからないか、中身に構文エラーがあります。`;
+                        bannerText.textContent = `警告：サーバー上にJSONマスターファイルが見つからないか、中身にエラーがあります。`;
                         bannerText.className = 'font-bold text-rose-400 text-sm';
                     }
                 }
             } catch (globalErr) {
                 console.error("起動初期化例外発生:", globalErr);
-                bannerEmoji.textContent = '🚨';
-                bannerEmoji.classList.remove('animate-pulse');
-                bannerText.textContent = `システムエラーにより起動が停止しました: ${globalErr.message}`;
-                bannerText.className = 'font-bold text-rose-400 text-sm';
             }
         }
 
         window.addEventListener('DOMContentLoaded', () => {
             loadAllCardLists();
-            recalculateQuickProbabilities(); // クイック確率計算機初期マウント
+            recalculateQuickProbabilities(); 
         });
 
-        // --- 壊れた不完全なJSONを自動で修復して読み込む救済パースロジック ---
         function robustJsonParse(text) {
             let trimmed = text.trim();
             try {
                 return JSON.parse(trimmed);
             } catch (firstError) {
-                console.warn("JSONの標準パースに失敗しました。カッコ修復処理を試みます...", firstError.message);
-                
                 trimmed = trimmed.replace(/,(\s*[}\]]*)$/, '$1');
-
                 let openBraces = (trimmed.match(/{/g) || []).length;
                 let closeBraces = (trimmed.match(/}/g) || []).length;
                 
                 if (openBraces > closeBraces) {
                     let repairedText = trimmed + '}'.repeat(openBraces - closeBraces);
-                    try {
-                        const parsed = JSON.parse(repairedText);
-                        console.log("✅ カッコを補完して無事JSONのロードに成功しました！");
-                        return parsed;
-                    } catch (secondError) {
-                        throw new Error("カッコを自動補完しましたがパースできませんでした。JSONファイルのフォーマットを再確認してください。");
-                    }
+                    try { return JSON.parse(repairedText); } catch (e) { throw firstError; }
                 }
                 throw firstError;
             }
         }
 
-// 🟢 【完全修正】単一の File オブジェクト (files[0]) を正確に取得・処理するハンドラ
         let selectedFile = null;
 
         deckFileInput.addEventListener('change', (e) => {
             const files = e.target.files;
             if (files && files.length > 0) {
                 selectedFile = files[0];
-
                 const reader = new FileReader();
-                reader.onload = function(evt) {
-                    deckJsonInput.value = evt.target.result;
-                };
-                reader.onerror = function() {
-                    console.error("ファイルの自動転記に失敗しました。");
-                };
+                reader.onload = function(evt) { deckJsonInput.value = evt.target.result; };
                 reader.readAsText(selectedFile);
             } else {
                 selectedFile = null;
@@ -688,57 +681,27 @@
 
         loadTextBtn.addEventListener('click', () => {
             if (!selectedFile) {
-                alert("ファイルが選択されていません。先に「ファイルを選択」からデッキJSONファイルを選んでください。");
+                alert("ファイルが選択されていません。");
                 return;
             }
-            
             const reader = new FileReader();
             reader.onload = function(evt) {
                 deckJsonInput.value = evt.target.result;
-                alert("ファイルのテキスト読み込みに成功しました！\n右側のテキスト貼り付け欄に中身が表示されています。");
-            };
-            reader.onerror = function() {
-                alert("ファイルの読み取りに失敗しました。");
+                alert("ファイルのテキスト読み込みに成功しました！");
             };
             reader.readAsText(selectedFile);
         });
 
-        const debugFileInput = document.getElementById('debugFileInput');
-        const debugLoadBtn = document.getElementById('debugLoadBtn');
-        const debugTextOutput = document.getElementById('debugTextOutput');
-
-        debugLoadBtn.addEventListener('click', () => {
-            const files = debugFileInput.files;
-            if (!files || files.length === 0) {
-                alert("検証用のファイルが選択されていません。チェッカーエリアの「ファイルを選択」から選んでください。");
-                return;
-            }
-            
-            const file = files[0];
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                debugTextOutput.value = evt.target.result;
-                alert("【検証成功】ファイルをプレーンテキストとして正常に読み込み、右側のエリアに表示しました！");
-            };
-            reader.onerror = function(err) {
-                alert("【検証失敗】ブラウザによるファイル読み込み中にエラーが発生しました。");
-                console.error(err);
-            };
-            reader.readAsText(file);
-        });
-
-        // 展開実行ボタン
         importBtn.addEventListener('click', () => {
             try {
                 const parsed = robustJsonParse(deckJsonInput.value || '{}'); 
                 deckJsonInput.value = JSON.stringify(parsed, null, 2);
                 executeImport(parsed);
             } catch (err) {
-                alert('JSONテキストの解析に失敗しました。カッコやカンマの不整合がないか確認してください。\n詳細: ' + err.message);
+                alert('JSONテキストの解析に失敗しました。\n詳細: ' + err.message);
             }
         });
 
-        // --- インポート展開処理 ---
         function executeImport(deckData) {
             try {
                 state.mainDeck = {};
@@ -747,17 +710,15 @@
 
                 let mainTotal = 0;
 
-                // 1. メインデッキのインポート（標準化キーにデコード）
                 if (deckData.mainDeck) {
                     Object.entries(deckData.mainDeck).forEach(([rawId, count]) => {
                         const normId = normalizeDeckId(rawId);
                         state.mainDeck[normId] = count;
-                        state.conditions[normId] = 'none';
+                        state.conditions[normId] = 'none'; // 初期状態はnone
                         mainTotal += count;
                     });
                 }
 
-                // 2. 領土デッキのインポート（標準化キーにデコード）
                 if (deckData.territoryDeck) {
                     Object.entries(deckData.territoryDeck).forEach(([rawId, count]) => {
                         const normId = normalizeDeckId(rawId);
@@ -765,7 +726,6 @@
                     });
                 }
 
-                // 特化計算機のデフォルトデッキ枚数 N をインポートしたデッキ数に自動同期
                 if (mainTotal > 0) {
                     quickNInput.value = mainTotal;
                     recalculateQuickProbabilities();
@@ -782,23 +742,23 @@
         }
 
         function updateStatusText() {
-            const mustCards = Object.entries(state.conditions).filter(([_, type]) => type === 'must').map(([id]) => state.cardMap.get(id)?.name || id);
+            const mustAndCards = Object.entries(state.conditions).filter(([_, type]) => type === 'must_and').map(([id]) => state.cardMap.get(id)?.name || id);
+            const mustOrCards = Object.entries(state.conditions).filter(([_, type]) => type === 'must_or').map(([id]) => state.cardMap.get(id)?.name || id);
             const notCards = Object.entries(state.conditions).filter(([_, type]) => type === 'not').map(([id]) => state.cardMap.get(id)?.name || id);
 
             let text = "";
-            if (mustCards.length > 0) text += `🟢 必須: ${mustCards.join(', ')} `;
+            if (mustAndCards.length > 0) text += `🟢 必須(AND): ${mustAndCards.join(', ')} `;
+            if (mustOrCards.length > 0) text += `${text ? ' | ' : ''}🔵 必須(OR): ${mustOrCards.join(', ')} `;
             if (notCards.length > 0) text += `${text ? ' | ' : ''}🔴 不純物: ${notCards.join(', ')} `;
             if (!text) text = "カードをクリックすると、上の特化確率テーブルに投入枚数が自動セットされます！";
             simStatusText.textContent = text;
         }
 
-        // 表示用にきれいなID（カッコなし）を返す補助関数
         function cleanDisplayId(card, fallbackId) {
             if (!card || !card.id) return fallbackId;
             return card.id.toString().replace(/[（）\(\)\[\]\{\}‘’]/g, '').trim();
         }
 
-        // カードレンダラー
         function renderMainDeck() {
             mainDeckGrid.innerHTML = '';
             let totalCount = 0;
@@ -810,14 +770,18 @@
                 const cardNode = document.createElement('div');
                 const cond = state.conditions[cardId] || 'none';
                 
-                let borderClass = 'border-slate-800 hover:border-emerald-500';
+                let borderClass = 'border-slate-800 hover:border-slate-600';
                 let bgClass = 'bg-slate-950';
                 let badgeHtml = '';
 
-                if (cond === 'must') {
+                if (cond === 'must_and') {
                     borderClass = 'border-emerald-500 ring-2 ring-emerald-500/30';
                     bgClass = 'bg-emerald-950/20';
-                    badgeHtml = `<span class="absolute top-2 left-2 px-1.5 py-0.5 bg-emerald-500 text-slate-950 text-[8px] font-extrabold rounded shadow-md z-10">必須</span>`;
+                    badgeHtml = `<span class="absolute top-2 left-2 px-1.5 py-0.5 bg-emerald-500 text-slate-950 text-[8px] font-extrabold rounded shadow-md z-10">必須(AND)</span>`;
+                } else if (cond === 'must_or') {
+                    borderClass = 'border-indigo-500 ring-2 ring-indigo-500/30';
+                    bgClass = 'bg-indigo-950/20';
+                    badgeHtml = `<span class="absolute top-2 left-2 px-1.5 py-0.5 bg-indigo-500 text-white text-[8px] font-extrabold rounded shadow-md z-10">必須(OR)</span>`;
                 } else if (cond === 'not') {
                     borderClass = 'border-rose-500 ring-2 ring-rose-500/30';
                     bgClass = 'bg-rose-950/20';
@@ -866,7 +830,7 @@
                         `;
                     }
                 } else {
-                    cardNode.className = `relative ${bgClass} border border-rose-950 rounded-xl p-3 flex flex-col justify-between min-h-[80px]`;
+                    cardNode.className = `relative ${bgClass} border border-rose-950 rounded-xl p-3 flex flex-col justify-between min-h-[80px] cursor-pointer`;
                     cardNode.innerHTML = badgeHtml + `
                         <div class="flex justify-between items-start">
                             <span class="text-[10px] text-rose-500 font-mono">${displayId}</span>
@@ -878,29 +842,44 @@
                     `;
                 }
 
-                // メインデッキカードをクリックした際、上の特化計算機に投入枚数を自動で送り再計算する
+                // --- クリック時の状態遷移とOR連動 ---
                 cardNode.addEventListener('click', () => {
-                    // 1. 特化計算機への連動
-                    quickKInput.value = count;
-                    
+                    // 状態遷移 (none -> must_and -> must_or -> not)
+                    if (cond === 'none') state.conditions[cardId] = 'must_and';
+                    else if (cond === 'must_and') state.conditions[cardId] = 'must_or';
+                    else if (cond === 'must_or') state.conditions[cardId] = 'not';
+                    else state.conditions[cardId] = 'none';
+
+                    // OR指定カードの枚数集計
+                    let orCount = 0;
+                    let orNames = [];
+                    Object.entries(state.conditions).forEach(([cId, cType]) => {
+                        if (cType === 'must_or') {
+                            orCount += state.mainDeck[cId];
+                            const c = state.cardMap.get(cId);
+                            orNames.push(c ? c.name : cleanDisplayId(c, cId));
+                        }
+                    });
+
+                    // 特化計算機への連動
                     let mainTotal = 0;
                     Object.values(state.mainDeck).forEach(c => mainTotal += c);
                     quickNInput.value = mainTotal || 40;
-                    quickCardNameLabel.textContent = `選択中: ${card ? card.name : displayId}`;
 
-                    // YがKを超えないように調整
-                    if (quickParams.Y > count) {
-                        quickParams.Y = Math.max(1, count);
-                        quickYValue.textContent = `${quickParams.Y} 枚`;
+                    if (orCount > 0) {
+                        quickKInput.value = orCount;
+                        quickCardNameLabel.textContent = `OR合計: ${orNames.join(', ')}`;
+                        
+                        // YがKを超えないように調整
+                        if (quickParams.Y > orCount) {
+                            quickParams.Y = Math.max(1, orCount);
+                            quickYValue.textContent = `${quickParams.Y} 枚`;
+                        }
+                    } else {
+                        quickCardNameLabel.textContent = `自由入力モード`;
                     }
 
                     recalculateQuickProbabilities();
-
-                    // 2. モンテカルロシミュレーター側の条件切り替え
-                    if (cond === 'none') state.conditions[cardId] = 'must';
-                    else if (cond === 'must') state.conditions[cardId] = 'not';
-                    else state.conditions[cardId] = 'none';
-
                     renderMainDeck();
                     updateStatusText();
                 });
@@ -923,7 +902,6 @@
                 const displayId = cleanDisplayId(card, cardId);
 
                 if (card) {
-                    // 領土の種別に応じたビジュアルバッジの自動作成
                     let typeBadge = '';
                     let borderHighlight = 'hover:border-blue-500';
                     
@@ -1043,18 +1021,16 @@
         // --- シミュレーションコア ---
         runSimulationBtn.addEventListener('click', () => {
             const runs = parseInt(simRunsSelect.value, 10);
-            const mustIds = Object.entries(state.conditions).filter(([_, type]) => type === 'must').map(([id]) => id);
+            const mustIds = Object.entries(state.conditions).filter(([_, type]) => type === 'must_and').map(([id]) => id);
             const notIds = Object.entries(state.conditions).filter(([_, type]) => type === 'not').map(([id]) => id);
 
             if (mustIds.length === 0) {
-                alert("初手からプレイする『必須カード』(緑枠)を少なくとも1枚指定してください。");
+                alert("初手からプレイする『必須(AND)』カード(緑枠)を少なくとも1枚指定してください。\n※シミュレーターはAND条件を基準に稼働します。");
                 return;
             }
 
             let mainDeckArray = [];
-            let mainTotal = 0;
             Object.entries(state.mainDeck).forEach(([id, count]) => {
-                mainTotal += count;
                 for (let i = 0; i < count; i++) mainDeckArray.push(id);
             });
             while (mainDeckArray.length < 40) mainDeckArray.push('ACG-DUMMY');
