@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アニマルカードゲーム Web確率計算機 ver 0.2608240710</title>
+    <title>アニマルカードゲーム Web確率計算機 ver 0.2608240714</title>
     <!-- Tailwind CSS & Chart.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -25,7 +25,7 @@
             <h1 class="text-xl font-bold text-emerald-400 flex items-center gap-2">
                 🐾 アニマルカードゲーム Web確率計算機
                 <span class="text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono">
-                    ver 0.2608240710
+                    ver 0.2608240714
                 </span>
             </h1>
             <span class="text-xs bg-slate-800 text-slate-400 px-3 py-1 rounded-full border border-slate-700 font-mono">
@@ -93,7 +93,7 @@
             </div>
         </section>
 
-        <!-- 📊 【新規特化機能】超幾何分布・ドロー確率特化計算機 (7枚目以上に限定) -->
+        <!-- 📊 【特化機能】超幾何分布・ドロー確率特化計算機 (7枚目以上に限定) -->
         <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2">
                 <h2 class="text-base font-bold text-emerald-400 flex items-center gap-2">
@@ -376,7 +376,7 @@
 
             quickProbTableBody.innerHTML = '';
 
-            // 🟢 【①の対応】表示をスッキリさせるため、1〜6枚ドローを非表示化し「7枚目（初期手札）」〜「20枚目」のみを表示ループ
+            // 表示をスッキリさせるため、「7枚目（初期手札）」〜「20枚目」のみを表示ループ
             for (let X = 7; X <= 20; X++) {
                 const prob = calculateHypergeometric(N, K, X, Y, type);
                 const percent = (prob * 100).toFixed(1);
@@ -473,15 +473,6 @@
             recalculateQuickProbabilities();
         });
 
-
-        // トグル切り替え時に再描画を走らせる
-        showDetailedCheck.addEventListener('change', () => {
-            if (Object.keys(state.mainDeck).length > 0) {
-                renderMainDeck();
-                renderTerritoryDeck();
-            }
-        });
-
         // --- 🛠️ 【表記揺れ標準キー変換】 ---
         function normalizeCardListId(rawId) {
             if (rawId === undefined || rawId === null) return "";
@@ -500,8 +491,8 @@
             // プレフィックスとカード番号を抽出
             const match = s.match(/^(ACG|BP\d|BP|RYO)[-_]?(\d+)/i);
             if (match) {
-                const prefix = match.toUpperCase(); 
-                const num = parseInt(match, 10);     
+                const prefix = match[1].toUpperCase(); 
+                const num = parseInt(match[2], 10);     
                 return `${prefix}-${num}`;
             }
             return s.toUpperCase();
@@ -536,97 +527,109 @@
             }
         }
 
-        // --- 起動時に 8つの JSON ファイルを非同期並行ロードして自動マージ ---
+        // --- 起動時に 8つの JSON ファイルを非同期並行ロードして自動マージ (堅牢化版) ---
         async function loadAllCardLists() {
-            const fileNames = [
-                'AGC1第１弾.json',
-                'AGC2第２弾.json',
-                'BP1種属戦争.json',
-                'BP2運命の物語.json',
-                'BP3青嵐再来.json',
-                'BP4適者生存.json',
-                'BP5天空の忌み地.json',
-                'RYO領土.json'
-            ];
+            try {
+                const fileNames = [
+                    'AGC1第１弾.json',
+                    'AGC2第２弾.json',
+                    'BP1種属戦争.json',
+                    'BP2運命の物語.json',
+                    'BP3青嵐再来.json',
+                    'BP4適者生存.json',
+                    'BP5天空の忌み地.json',
+                    'RYO領土.json'
+                ];
 
-            fileStatusGrid.innerHTML = fileNames.map((file, idx) => `
-                <div id="status-${idx}" class="flex items-center gap-2 bg-slate-950 p-2 rounded-lg border border-slate-800 text-slate-500">
-                    <span class="w-2.5 h-2.5 rounded-full bg-slate-700 animate-pulse"></span>
-                    <span class="font-mono text-[10px] truncate max-w-[130px]">${file} (読込中)</span>
-                </div>
-            `).join('');
+                fileStatusGrid.innerHTML = fileNames.map((file, idx) => `
+                    <div id="status-${idx}" class="flex items-center gap-2 bg-slate-950 p-2 rounded-lg border border-slate-800 text-slate-500">
+                        <span class="w-2.5 h-2.5 rounded-full bg-slate-700 animate-pulse"></span>
+                        <span class="font-mono text-[10px] truncate max-w-[130px]">${file} (読込中)</span>
+                    </div>
+                `).join('');
 
-            let loadedCount = 0;
-            let successTotalCards = 0;
+                let loadedCount = 0;
+                let successTotalCards = 0;
 
-            const fetchPromises = fileNames.map((file, idx) => {
-                const statusDiv = document.getElementById(`status-${idx}`);
-                const dot = statusDiv.querySelector('span');
+                const fetchPromises = fileNames.map((file, idx) => {
+                    const statusDiv = document.getElementById(`status-${idx}`);
+                    const dot = statusDiv ? statusDiv.querySelector('span') : null;
 
-                return fetch(encodeURIComponent(file)) 
-                    .then(res => {
-                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                        return res.json();
-                    })
-                    .then(data => {
-                        loadedCount++;
-                        loadProgressCount.textContent = `${loadedCount} / 8 files`;
-                        
-                        statusDiv.classList.remove('text-slate-500', 'border-slate-800');
-                        statusDiv.classList.add('text-emerald-400', 'border-emerald-500/20', 'bg-emerald-950/10');
-                        dot.classList.remove('bg-slate-700', 'animate-pulse');
-                        dot.classList.add('bg-emerald-500');
-                        statusDiv.querySelector('span:last-child').textContent = `${file} (${data.length}枚)`;
+                    return fetch(encodeURIComponent(file)) 
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            return res.json();
+                        })
+                        .then(data => {
+                            loadedCount++;
+                            loadProgressCount.textContent = `${loadedCount} / 8 files`;
+                            
+                            if (statusDiv && dot) {
+                                statusDiv.classList.remove('text-slate-500', 'border-slate-800');
+                                statusDiv.classList.add('text-emerald-400', 'border-emerald-500/20', 'bg-emerald-950/10');
+                                dot.classList.remove('bg-slate-700', 'animate-pulse');
+                                dot.classList.add('bg-emerald-500');
+                                statusDiv.querySelector('span:last-child').textContent = `${file} (${data.length}枚)`;
+                            }
 
-                        successTotalCards += data.length;
-                        return data;
-                    })
-                    .catch(err => {
-                        loadedCount++;
-                        loadProgressCount.textContent = `${loadedCount} / 8 files`;
-                        
-                        statusDiv.classList.remove('text-slate-500', 'border-slate-800');
-                        statusDiv.classList.add('text-rose-400', 'border-rose-500/20', 'bg-rose-950/10');
-                        dot.classList.remove('bg-slate-700', 'animate-pulse');
-                        dot.classList.add('bg-rose-500');
-                        
-                        let errorMsg = '読込失敗';
-                        if (window.location.protocol === 'file:') {
-                            errorMsg = 'ローカル制限';
-                        } else {
-                            errorMsg = err.message.includes('404') ? '404なし' : 'JSONエラー';
-                        }
-                        statusDiv.querySelector('span:last-child').textContent = `${file} (${errorMsg})`;
-                        return [];
-                    });
-            });
+                            successTotalCards += data.length;
+                            return data;
+                        })
+                        .catch(err => {
+                            loadedCount++;
+                            loadProgressCount.textContent = `${loadedCount} / 8 files`;
+                            
+                            if (statusDiv && dot) {
+                                statusDiv.classList.remove('text-slate-500', 'border-slate-800');
+                                statusDiv.classList.add('text-rose-400', 'border-rose-500/20', 'bg-rose-950/10');
+                                dot.classList.remove('bg-slate-700', 'animate-pulse');
+                                dot.classList.add('bg-rose-500');
+                                
+                                let errorMsg = '読込失敗';
+                                if (window.location.protocol === 'file:') {
+                                    errorMsg = 'ローカル制限';
+                                } else {
+                                    errorMsg = err.message.includes('404') ? '404なし' : 'JSONエラー';
+                                }
+                                statusDiv.querySelector('span:last-child').textContent = `${file} (${errorMsg})`;
+                            }
+                            return [];
+                        });
+                });
 
-            const allVolumesData = await Promise.all(fetchPromises);
-            const mergedCards = allVolumesData.flat();
+                const allVolumesData = await Promise.all(fetchPromises);
+                const mergedCards = allVolumesData.flat();
 
-            state.cardMap.clear();
-            mergedCards.forEach(card => {
-                if (card && card.id) {
-                    const normId = normalizeCardListId(card.id);
-                    state.cardMap.set(normId, card); 
+                state.cardMap.clear();
+                mergedCards.forEach(card => {
+                    if (card && card.id) {
+                        const normId = normalizeCardListId(card.id);
+                        state.cardMap.set(normId, card); 
+                    }
+                });
+
+                if (state.cardMap.size > 0) {
+                    bannerEmoji.textContent = '✅';
+                    bannerEmoji.classList.remove('animate-pulse');
+                    bannerText.textContent = `データベース構築完了！全 ${state.cardMap.size} 枚のカードが紐付け可能です。`;
+                    bannerText.className = 'font-bold text-emerald-400 text-sm';
+                } else {
+                    bannerEmoji.textContent = '🚨';
+                    bannerEmoji.classList.remove('animate-pulse');
+                    if (window.location.protocol === 'file:') {
+                        bannerText.textContent = `PC上で直接ファイルをダブルクリックして起動しているため、ブラウザ制限(CORS)によりマスターデータをロードできません。GitHub Pages等のウェブサーバーにアップするか、ローカルサーバーを立ち上げてアクセスしてください。`;
+                        bannerText.className = 'font-bold text-rose-400 text-sm';
+                    } else {
+                        bannerText.textContent = `警告：サーバー上にJSONマスターファイルが見つからないか、中身に構文エラーがあります。`;
+                        bannerText.className = 'font-bold text-rose-400 text-sm';
+                    }
                 }
-            });
-
-            if (state.cardMap.size > 0) {
-                bannerEmoji.textContent = '✅';
-                bannerEmoji.classList.remove('animate-pulse');
-                bannerText.textContent = `データベース構築完了！全 ${state.cardMap.size} 枚のカードが紐付け可能です。`;
-                bannerText.className = 'font-bold text-emerald-400 text-sm';
-            } else {
+            } catch (globalErr) {
+                console.error("起動初期化例外発生:", globalErr);
                 bannerEmoji.textContent = '🚨';
                 bannerEmoji.classList.remove('animate-pulse');
-                if (window.location.protocol === 'file:') {
-                    bannerText.textContent = `PC上で直接ダブルクリックして開いているため、ブラウザ制限で読み込めません。GitHub Pagesへアップすると緑になります。`;
-                    bannerText.className = 'font-bold text-rose-400 text-sm';
-                } else {
-                    bannerText.textContent = `エラー：JSONファイルが見つからないか、中身に構文エラーがあります。`;
-                    bannerText.className = 'font-bold text-rose-400 text-sm';
-                }
+                bannerText.textContent = `システムエラーにより起動が停止しました: ${globalErr.message}`;
+                bannerText.className = 'font-bold text-rose-400 text-sm';
             }
         }
 
@@ -662,13 +665,13 @@
             }
         }
 
-        // 🟢 【②の対応】デッキインポート処理（選択ファイルの自動ロード）FileReaderバグ完全修正コード
+        // 🟢 【完全修正】単一の File オブジェクト (files) を正確に取得・処理するハンドラ
         let selectedFile = null;
 
         deckFileInput.addEventListener('change', (e) => {
             const files = e.target.files;
             if (files && files.length > 0) {
-                selectedFile = files; // 単一の File を取得
+                selectedFile = files; // 🟢 単一の File を取得
 
                 const reader = new FileReader();
                 reader.onload = function(evt) {
@@ -700,7 +703,7 @@
             reader.readAsText(selectedFile);
         });
 
-        // 🟢 バグ切り分け専用：こちらもFileListではなく単一のFileオブジェクト  を取得するように完全補正
+        // 🟢 【完全修正】デバッグチェッカーも単一の File オブジェクト(files)を取得するように完全補正
         const debugFileInput = document.getElementById('debugFileInput');
         const debugLoadBtn = document.getElementById('debugLoadBtn');
         const debugTextOutput = document.getElementById('debugTextOutput');
@@ -712,7 +715,7 @@
                 return;
             }
             
-            const file = files; // 🟢 files (FileList) ではなくfiles (File) を取得
+            const file = files; // 🟢 files (File) を取得
             const reader = new FileReader();
             reader.onload = function(evt) {
                 debugTextOutput.value = evt.target.result;
