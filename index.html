@@ -47,7 +47,6 @@
                 <span id="loadProgressCount" class="font-mono bg-slate-950 px-2.5 py-1 rounded-md border border-slate-800 text-slate-400 text-xs">0 / 8 files</span>
             </div>
             
-            <!-- 各ファイルの個別読込ステータスランプ -->
             <div id="fileStatusGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-800/80 text-[11px]">
                 <!-- JSで動的にステータスを生成 -->
             </div>
@@ -59,7 +58,6 @@
                 <h2 class="text-base font-bold text-emerald-300 flex items-center gap-2">
                     📥 デッキJSONの読み込み
                 </h2>
-                <!-- ③ 詳細表示切り替えチェックボックス -->
                 <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
                     <input type="checkbox" id="showDetailedCheck" class="w-4 h-4 rounded text-emerald-500 bg-slate-900 border-slate-800 focus:ring-emerald-500 focus:ring-offset-slate-950 cursor-pointer">
                     <label for="showDetailedCheck" class="text-xs font-bold text-slate-300 cursor-pointer select-none">
@@ -93,7 +91,7 @@
             </div>
         </section>
 
-        <!-- 📊 【特化機能】超幾何分布・ドロー確率特化計算機 (7枚目以上に限定) -->
+        <!-- 📊 【特化機能】超幾何分布・ドロー確率特化計算機 -->
         <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2">
                 <h2 class="text-base font-bold text-emerald-400 flex items-center gap-2">
@@ -146,7 +144,7 @@
                         </div>
                     </div>
 
-                    <!-- ④ 不純物(OR) 投入枚数 K_not & 許容上限 Z -->
+                    <!-- 不純物(OR) 投入枚数 K_not & 許容上限 Z -->
                     <div class="space-y-2 pt-2 border-t border-slate-800/80">
                         <div class="space-y-1.5">
                             <label class="block text-[11px] font-bold text-rose-400">不純物(OR)の投入枚数 (K_not)</label>
@@ -167,7 +165,7 @@
                         </div>
                     </div>
 
-                    <!-- 条件タイプ (ぴったり / 以上) -->
+                    <!-- 条件タイプ -->
                     <div class="space-y-1.5 pt-1">
                         <label class="block text-[11px] font-bold text-slate-400">目標判定の条件</label>
                         <div class="grid grid-cols-2 gap-1 p-0.5 bg-slate-900 rounded border border-slate-800">
@@ -199,7 +197,7 @@
 
                 </div>
 
-                <!-- 確率一覧テーブル (7枚目以上に特化) -->
+                <!-- 確率一覧テーブル -->
                 <div class="lg:col-span-3 bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
                     <p class="text-xs font-bold text-slate-300 border-b border-slate-800 pb-1.5 mb-3 flex justify-between">
                         <span>📈 ドロー枚数(X)ごとの確率一覧</span>
@@ -226,7 +224,7 @@
         <!-- 2. シミュレーション設定 ＆ グラフ表示 -->
         <section id="simulatorControlSection" class="hidden bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
             <h2 class="text-base font-bold text-amber-400 flex items-center gap-2 border-b border-slate-800 pb-2">
-                🎲 確率シミュレーター (マリガン ✕ 占術領土 ✕ ターン別プレイ達成率)
+                🎲 確率シミュレーター (マリガンボトム送り ✕ 毎ターン1ドロー ✕ 占術領土 ✕ ターン別達成率)
             </h2>
             
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -235,10 +233,10 @@
                     <div class="space-y-1.5 text-xs text-slate-300 leading-relaxed">
                         <p class="font-bold text-slate-400">⛰️ シミュレーション判定ルール:</p>
                         <ul class="list-disc list-inside space-y-1 text-slate-400">
-                            <li><strong>不純物(赤)</strong>: 最初の7枚に3枚以上あると事故(失敗)と判定。</li>
+                            <li><strong>マリガンボトム処理</strong>: 1T開始前、初期手札7枚から不純物優先で2枚を山札の底に送ります（手札5枚へ）。</li>
+                            <li><strong>毎ターン1ドロー</strong>: 各ターンの開始時に山札の上から1枚ドローして手札を更新します。</li>
                             <li><strong>ムーブイン</strong>: 3T以降に出た2色領土はそのターンのみコスト供給不可。</li>
                             <li><strong>占術領土</strong>: めくれた際、次ターンの領土をPeekし不要なら山札の底へ。</li>
-                            <li><span class="text-emerald-400">必須(AND)</span>のみプレイ目標として扱われます。</li>
                         </ul>
                     </div>
                     <div>
@@ -276,7 +274,6 @@
                         🃏 メインデッキ <span id="mainDeckCount" class="text-sm font-normal text-slate-400">(0枚)</span>
                     </h2>
                     <div class="flex items-center gap-3">
-                        <!-- ② 条件リセットボタン -->
                         <button id="resetConditionsBtn" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2.5 py-1 rounded border border-slate-700 transition-colors">
                             🔄 条件リセット
                         </button>
@@ -335,13 +332,13 @@
         const showDetailedCheck = document.getElementById('showDetailedCheck');
         const resetConditionsBtn = document.getElementById('resetConditionsBtn');
 
-        // --- 📊 クイック確率計算機のロジック ---
+        // --- 📊 クイック確率計算機 (多変量超幾何分布) ---
         let quickParams = {
             N: 40,
             K: 3,
             Y: 1,
             K_not: 0,
-            Z: 3, // 初期値 3枚未満
+            Z: 3,
             type: 'at_least'
         };
 
@@ -355,7 +352,6 @@
         const typeExact = document.getElementById('typeExact');
         const quickProbTableBody = document.getElementById('quickProbTableBody');
 
-        // 組み合わせ nCr (高精度演算)
         function jsComb(n, k) {
             if (k < 0 || k > n) return 0;
             if (k === 0 || k === n) return 1;
@@ -367,7 +363,6 @@
             return res;
         }
 
-        // 多変量超幾何分布 (目標k1枚, 不純物k2枚を引く確率)
         function multivariateHypergeometricExact(N, K1, K2, X, k1, k2) {
             const K_other = N - K1 - K2;
             const k_other = X - k1 - k2;
@@ -382,21 +377,19 @@
             return numerator / denominator;
         }
 
-        // ④ 超幾何確率の総合計算 (不純物がZ枚未満 ＆ 目標Y枚/Y枚以上)
         function calculateMultivariateProbability(N, K1, K2, X, Y, Z, type) {
             let totalProb = 0;
             const k1_start = Y;
             const k1_end = (type === 'exact') ? Y : Math.min(K1, X);
 
             for (let k1 = k1_start; k1 <= k1_end; k1++) {
-                for (let k2 = 0; k2 < Z; k2++) { // Z枚未満 (0 ～ Z-1枚)
+                for (let k2 = 0; k2 < Z; k2++) {
                     totalProb += multivariateHypergeometricExact(N, K1, K2, X, k1, k2);
                 }
             }
             return totalProb;
         }
 
-        // 再計算とテーブル更新
         function recalculateQuickProbabilities() {
             const N = Math.max(1, parseInt(quickNInput.value, 10) || 40);
             const K = Math.max(0, parseInt(quickKInput.value, 10) || 0);
@@ -439,7 +432,6 @@
             }
         }
 
-        // 調整ボタン・インプットリスナーの設定
         quickNInput.addEventListener('input', recalculateQuickProbabilities);
         quickKInput.addEventListener('input', () => {
             const K = parseInt(quickKInput.value, 10) || 0;
@@ -520,7 +512,7 @@
             recalculateQuickProbabilities();
         });
 
-        // 目標確率からの逆算ロジック
+        // 目標確率からの逆算
         const revXInput = document.getElementById('revXInput');
         const revPInput = document.getElementById('revPInput');
         const calcRevKBtn = document.getElementById('calcRevKBtn');
@@ -557,13 +549,11 @@
             }
         });
 
-        // ③ 詳細表示チェック切り替えでリアルタイム更新
         showDetailedCheck.addEventListener('change', () => {
             renderMainDeck();
             renderTerritoryDeck();
         });
 
-        // ② 条件一括リセットボタン
         resetConditionsBtn.addEventListener('click', () => {
             Object.keys(state.conditions).forEach(id => {
                 state.conditions[id] = 'none';
@@ -576,7 +566,7 @@
             updateStatusText();
         });
 
-        // --- 🛠️ 【表記揺れ標準キー変換】 ---
+        // --- ID変換ユーティリティ ---
         function normalizeCardListId(rawId) {
             if (rawId === undefined || rawId === null) return "";
             let s = rawId.toString().trim();
@@ -598,20 +588,16 @@
             return s.toUpperCase();
         }
 
-        // --- 🛠️ 【デッキ側数値IDからのデコード】 ---
         function normalizeDeckId(rawId) {
             let num = parseInt(rawId, 10);
             if (isNaN(num)) {
                 return normalizeCardListId(rawId);
             }
 
-            if (num === 5039) {
-                return "BP1-38";
-            }
+            if (num === 5039) return "BP1-38";
 
             if (num >= 8000 && num < 9000) {
-                const ryoNum = num - 8000;
-                return `RYO-${ryoNum}`;
+                return `RYO-${num - 8000}`;
             } else if (num >= 5000 && num < 6000) {
                 const y = Math.floor((num - 5000) / 100); 
                 const bpNum = y + 1; 
@@ -622,7 +608,6 @@
             }
         }
 
-        // JSONマスターデータの並行読込
         async function loadAllCardLists() {
             try {
                 const fileNames = [
@@ -895,14 +880,12 @@
                     `;
                 }
 
-                // クリック時の状態遷移 (none -> must_and -> must_or -> not)
                 cardNode.addEventListener('click', () => {
                     if (cond === 'none') state.conditions[cardId] = 'must_and';
                     else if (cond === 'must_and') state.conditions[cardId] = 'must_or';
                     else if (cond === 'must_or') state.conditions[cardId] = 'not';
                     else state.conditions[cardId] = 'none';
 
-                    // OR/不純物の自動集計
                     let orCount = 0;
                     let notCount = 0;
                     let orNames = [];
@@ -944,7 +927,6 @@
             mainDeckCountEl.textContent = `(${totalCount}枚)`;
         }
 
-        // ① 領土デッキの表示修正（ファスト領土判定の改善）
         function renderTerritoryDeck() {
             territoryDeckGrid.innerHTML = '';
             let totalCount = 0;
@@ -961,7 +943,6 @@
                     let typeBadge = '';
                     let borderHighlight = 'hover:border-blue-500';
                     
-                    // ① 種族または2色属性によるファスト/夜/占術領土の厳密判定
                     const isTwoColor = card.conditions && card.conditions.length >= 2;
                     const speciesStr = card.species || '';
 
@@ -1078,23 +1059,25 @@
             return needed;
         }
 
-        // シミュレーション実行
+        // --- 🎲 モンテカルロシミュレーター（修正版） ---
         runSimulationBtn.addEventListener('click', () => {
             const runs = parseInt(simRunsSelect.value, 10);
-            const mustIds = Object.entries(state.conditions).filter(([_, type]) => type === 'must_and').map(([id]) => id);
-            const notIds = Object.entries(state.conditions).filter(([_, type]) => type === 'not').map(([id]) => id);
+            const mustAndIds = Object.entries(state.conditions).filter(([_, type]) => type === 'must_and').map(([id]) => id);
+            const mustOrIds = Object.entries(state.conditions).filter(([_, type]) => type === 'must_or').map(([id]) => id);
 
-            if (mustIds.length === 0) {
-                alert("初手からプレイする『必須(AND)』カード(緑枠)を少なくとも1枚指定してください。");
+            if (mustAndIds.length === 0 && mustOrIds.length === 0) {
+                alert("プレイを検証したい『必須(AND)』または『必須(OR)』のカードを少なくとも1枚選択してください。");
                 return;
             }
 
+            // メインデッキ配列の構築
             let mainDeckArray = [];
             Object.entries(state.mainDeck).forEach(([id, count]) => {
                 for (let i = 0; i < count; i++) mainDeckArray.push(id);
             });
             while (mainDeckArray.length < 40) mainDeckArray.push('ACG-DUMMY');
 
+            // 領土デッキ配列の構築
             let territoryDeckArray = [];
             Object.entries(state.territoryDeck).forEach(([id, count]) => {
                 const card = state.cardMap.get(id) || { id: id, name: '領土', conditions: '無', scry: false };
@@ -1106,39 +1089,66 @@
                 territoryDeckArray.push({ id: 'DUMMY-L', name: 'ダミー領土', conditions: '無', scry: false });
             }
 
+            // 初手マリガンで「ボトムへ送る優先順位」（優先度が高いものを戻す）
+            function getDiscardPriority(cardId) {
+                const cond = state.conditions[cardId] || 'none';
+                if (cond === 'not') return 4;       // 🔴 不純物（最優先で戻す）
+                if (cond === 'none') return 3;      // ⚪ 条件なし通常カード
+                if (cond === 'must_or') return 2;   // 🔵 必須OR
+                if (cond === 'must_and') return 1;  // 🟢 必須AND（最もキープしたい）
+                return 3;
+            }
+
             runSimulationBtn.disabled = true;
             runSimulationBtn.innerHTML = `<span>⏳ シミュレーション計算中...</span>`;
 
             setTimeout(() => {
-                const mustCardObjects = mustIds.map(id => state.cardMap.get(id)).filter(Boolean);
+                const mustAndCardObjects = mustAndIds.map(id => state.cardMap.get(id)).filter(Boolean);
                 let successCounts = Array(10).fill(0);
 
                 for (let run = 0; run < runs; run++) {
+                    // 山札をシャッフル
                     const shuffledMain = shuffle([...mainDeckArray]);
-                    const initialDraw = shuffledMain.slice(0, 7);
+                    
+                    // ① 初期手札7枚を引く
+                    let hand = shuffledMain.slice(0, 7);
+                    let drawPile = shuffledMain.slice(7); // 山札 (残り33枚)
 
-                    let hasAllMust = mustIds.every(id => initialDraw.includes(id));
-                    if (!hasAllMust) continue;
+                    // ② 1ターン目が始まる前に「不純物優先」で手札から2枚をボトムへ送る
+                    hand.sort((a, b) => {
+                        const pDiff = getDiscardPriority(b) - getDiscardPriority(a);
+                        if (pDiff !== 0) return pDiff;
+                        return Math.random() - 0.5; // 同優先度同士はランダム
+                    });
 
-                    let garnetCount = initialDraw.filter(id => notIds.includes(id)).length;
-                    if (garnetCount > 2) continue; 
+                    // 優先度の高い2枚（不純物等）を取り出し、山札の底（末尾）へ送る
+                    const returnedCards = hand.splice(0, 2);
+                    drawPile.push(...returnedCards); // 手札は5枚になる
 
+                    // 領土デッキの準備
                     const shuffledTerritory = shuffle([...territoryDeckArray]);
                     let activeTerritories = [];
 
+                    // ③ 1〜10ターンの進行
                     for (let T = 1; T <= 10; T++) {
+                        // 【毎ターン1ドロー】山札の上から1枚を手札に加える
+                        if (drawPile.length > 0) {
+                            hand.push(drawPile.shift());
+                        }
+
+                        // 毎ターン領土を1枚設置
                         let currentLand = shuffledTerritory[T - 1];
-                        
                         activeTerritories.push({
                             ...currentLand,
                             turnPlayed: T
                         });
 
+                        // 占術領土の処理（次ターンの領土が不要ならボトムへ送る）
                         if (currentLand.scry && T < shuffledTerritory.length) {
                             let nextLandIndex = T; 
                             let nextLand = shuffledTerritory[nextLandIndex];
                             
-                            let neededColors = getNeededColors(mustCardObjects, activeTerritories);
+                            let neededColors = getNeededColors(mustAndCardObjects, activeTerritories);
                             let nextLandColors = nextLand.conditions ? nextLand.conditions.split('') : [];
 
                             let isUseful = nextLandColors.some(color => neededColors.includes(color));
@@ -1148,27 +1158,38 @@
                             }
                         }
 
-                        let allPlayable = mustCardObjects.every(card => {
-                            let reqColors = card.conditions ? card.conditions.split('') : [];
-                            let availColors = activeTerritories.map(land => land.conditions ? land.conditions.split('') : []);
-                            let conditionsMet = canSatisfyConditions(reqColors, availColors);
+                        // 🎯 プレイ可能判定
+                        // 1. 必須(AND)カードがすべて手札に揃っているか
+                        const hasAllMustAnd = mustAndIds.every(id => hand.includes(id));
+                        
+                        // 2. 必須(OR)カードが指定されていれば、1枚以上手札に揃っているか
+                        const hasAnyMustOr = mustOrIds.length === 0 || mustOrIds.some(id => hand.includes(id));
 
-                            let availCost = 0;
-                            activeTerritories.forEach(land => {
-                                const isTwoColor = land.conditions && land.conditions.length >= 2;
-                                const isMoveIn = isTwoColor && T >= 3 && land.turnPlayed === T;
-                                if (!isMoveIn) availCost += 1;
+                        if (hasAllMustAnd && hasAnyMustOr) {
+                            // コストと色属性の必要条件が満たせるかチェック
+                            let allPlayable = mustAndCardObjects.every(card => {
+                                let reqColors = card.conditions ? card.conditions.split('') : [];
+                                let availColors = activeTerritories.map(land => land.conditions ? land.conditions.split('') : []);
+                                let conditionsMet = canSatisfyConditions(reqColors, availColors);
+
+                                let availCost = 0;
+                                activeTerritories.forEach(land => {
+                                    const isTwoColor = land.conditions && land.conditions.length >= 2;
+                                    const isMoveIn = isTwoColor && T >= 3 && land.turnPlayed === T;
+                                    if (!isMoveIn) availCost += 1;
+                                });
+                                let costMet = availCost >= card.cost;
+
+                                return conditionsMet && costMet;
                             });
-                            let costMet = availCost >= card.cost;
 
-                            return conditionsMet && costMet;
-                        });
-
-                        if (allPlayable) {
-                            for (let s = T - 1; s < 10; s++) {
-                                successCounts[s]++;
+                            if (allPlayable) {
+                                // 達成したターン以降（T〜10T）を全て「成功」としてカウント
+                                for (let s = T - 1; s < 10; s++) {
+                                    successCounts[s]++;
+                                }
+                                break; 
                             }
-                            break; 
                         }
                     }
                 }
