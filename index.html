@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アニマルカードゲーム Web確率計算機 ver 0.260826.2</title>
+    <title>アニマルカードゲーム Web確率計算機 ver 0.260826.3</title>
     <!-- Tailwind CSS & Chart.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -25,7 +25,7 @@
             <h1 class="text-xl font-bold text-emerald-400 flex items-center gap-2">
                 🐾 アニマルカードゲーム Web確率計算機
                 <span class="text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono">
-                    ver 0.260826.2
+                    ver 0.260826.3
                 </span>
             </h1>
             <span class="text-xs bg-slate-800 text-slate-400 px-3 py-1 rounded-full border border-slate-700 font-mono">
@@ -102,7 +102,7 @@
                 </span>
             </div>
             <p class="text-xs text-slate-400 leading-relaxed">
-                数学的公式（多変量超幾何分布）を用いて、目標カードを引く確率と不純物を規定枚数未満に抑える確率を即時に計算します。<br>
+                数学적公式（多変量超幾何分布）を用いて、目標カードを引く確率と不純物を規定枚数未満に抑える確率を即時に計算します。<br>
                 メインデッキのカードをクリックし、<span class="text-indigo-400 font-bold">青色の「必須(OR)」</span>や<span class="text-rose-400 font-bold">赤色の「不純物」</span>に指定すると投入枚数が自動反映されます。
             </p>
 
@@ -648,12 +648,7 @@
             }
         });
 
-        // --- ⛰️ 領土条件チェッカー関連ロジック ---
-        let territoryParams = {
-            mode: 'single', // 'single' | 'combo'
-            targetAttr: '平野'
-        };
-
+        // --- ⛰️ 領土条件チェッカー関連ロジック (略記・正規化対応) ---
         const territoryModeSelect = document.getElementById('territoryModeSelect');
         const singleTerritoryControl = document.getElementById('singleTerritoryControl');
         const comboTerritoryControl = document.getElementById('comboTerritoryControl');
@@ -665,6 +660,22 @@
         const extendTurnsCheck = document.getElementById('extendTurnsCheck');
 
         let territoryYCount = 1;
+
+        // 略記（平・山・水・森）と正式名称（平野・山岳・水生/水域・森林）を相互変換・判定するためのヘルパー関数
+        function normalizeConditionString(cond) {
+            if (!cond) return "";
+            let s = cond.toString().trim();
+            // 略記をフルネームに正規化するマップ
+            const map = { '平': '平野', '山': '山岳', '水': '水生', '森': '森林' };
+            let result = "";
+            for (let i = 0; i < s.length; i++) {
+                let char = s[i];
+                result += map[char] || char;
+            }
+            // 従来の「水域」などの表記揺れも一応「水生」に統一（必要に応じて）
+            result = result.replace(/水域/g, '水生');
+            return result;
+        }
 
         document.getElementById('btnDecTerritoryY').addEventListener('click', () => {
             territoryYCount = Math.max(1, territoryYCount - 1);
@@ -678,8 +689,8 @@
         });
 
         territoryModeSelect.addEventListener('change', (e) => {
-            territoryParams.mode = e.target.value;
-            if (territoryParams.mode === 'single') {
+            const mode = e.target.value;
+            if (mode === 'single') {
                 singleTerritoryControl.classList.remove('hidden');
                 comboTerritoryControl.classList.add('hidden');
             } else {
@@ -695,13 +706,22 @@
         function getTerritoryDeckArray() {
             let territoryDeckArray = [];
             Object.entries(state.territoryDeck).forEach(([id, count]) => {
-                const card = state.cardMap.get(id) || { id: id, name: '領土', conditions: '平野', scry: false };
+                const card = state.cardMap.get(id) || { id: id, name: '領土', conditions: '平', scry: false };
                 for (let i = 0; i < count; i++) {
-                    territoryDeckArray.push({...card});
+                    territoryDeckArray.push({
+                        ...card,
+                        normalizedConditions: normalizeConditionString(card.conditions)
+                    });
                 }
             });
             while (territoryDeckArray.length < 10) {
-                territoryDeckArray.push({ id: 'DUMMY-L', name: 'ダミー領土', conditions: '平野', scry: false });
+                territoryDeckArray.push({ 
+                    id: 'DUMMY-L', 
+                    name: 'ダミー領土', 
+                    conditions: '平', 
+                    normalizedConditions: '平野',
+                    scry: false 
+                });
             }
             return territoryDeckArray;
         }
@@ -711,9 +731,10 @@
             const territoryDeckArray = getTerritoryDeckArray();
             const maxTurn = extendTurnsCheck.checked ? 10 : 5;
             const trials = 10000; // モンテカルロ試行回数
+            const currentMode = territoryModeSelect.value;
 
-            if (territoryParams.mode === 'single') {
-                const selectedAttr = targetAttributeSelect.value || '平野';
+            if (currentMode === 'single') {
+                const selectedAttr = targetAttributeSelect.value || '平野'; // 「平野」「山岳」「水生」「森林」
                 const requiredY = territoryYCount;
 
                 territoryTableTitle.textContent = `📈 ターン別・領土「${selectedAttr}条件」到達確率 (${requiredY}枚以上)`;
@@ -733,9 +754,9 @@
                             if ((land.species && land.species.includes('占術')) || land.scry) {
                                 if (T < shuffled.length) {
                                     let nextLand = shuffled[T];
-                                    let nextConds = nextLand.conditions || '';
-                                    if (!nextConds.includes(selectedAttr)) {
-                                        // 不要ならボトムに送る（シャッフル配列の末尾に移動）
+                                    let nextNorm = nextLand.normalizedConditions || normalizeConditionString(nextLand.conditions);
+                                    if (!nextNorm.includes(selectedAttr)) {
+                                        // 不要ならボトムに送る
                                         shuffled.splice(T, 1);
                                         shuffled.push(nextLand);
                                     }
@@ -743,10 +764,11 @@
                             }
                         }
 
-                        // 条件充足判定
+                        // 条件充足判定（正規化した文字列でインクルードチェック）
                         let count = 0;
                         activeLands.forEach(l => {
-                            if (l.conditions && l.conditions.includes(selectedAttr)) count++;
+                            let norm = l.normalizedConditions || normalizeConditionString(l.conditions);
+                            if (norm.includes(selectedAttr)) count++;
                         });
 
                         if (count >= requiredY) {
@@ -806,9 +828,10 @@
                         // 各条件のカウント
                         let counts = { '平野': 0, '山岳': 0, '水生': 0, '森林': 0 };
                         activeLands.forEach(l => {
-                            if (l.conditions) {
+                            let norm = l.normalizedConditions || normalizeConditionString(l.conditions);
+                            if (norm) {
                                 ['平野', '山岳', '水生', '森林'].forEach(attr => {
-                                    if (l.conditions.includes(attr)) counts[attr]++;
+                                    if (norm.includes(attr)) counts[attr]++;
                                 });
                             }
                         });
@@ -1134,6 +1157,9 @@
                     const abilitiesHtml = card.abilities 
                         ? (Array.isArray(card.abilities) ? card.abilities.join('<br>') : card.abilities.toString()) 
                         : '効果なし';
+                    
+                    // 表示時は正確なフルネームに正規化して綺麗に出力する
+                    const displayConditions = card.conditions ? normalizeConditionString(card.conditions) : '';
 
                     if (isDetailed) {
                         cardNode.className = `relative group ${bgClass} border ${borderClass} rounded-xl p-4 hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[220px]`;
@@ -1141,7 +1167,7 @@
                             <div class="flex justify-between items-start">
                                 <span class="text-[10px] text-slate-500 font-mono">${displayId}</span>
                                 <div class="flex items-center gap-1">
-                                    ${card.conditions ? `<span class="px-1 text-[9px] bg-slate-800 text-yellow-400 font-bold rounded border border-slate-700">${card.conditions}</span>` : ''}
+                                    ${displayConditions ? `<span class="px-1 text-[9px] bg-slate-800 text-yellow-400 font-bold rounded border border-slate-700">${displayConditions}</span>` : ''}
                                     <span class="w-5 h-5 flex items-center justify-center rounded-full bg-emerald-950 border border-emerald-500 text-[10px] text-emerald-300 font-extrabold">${card.cost}</span>
                                 </div>
                             </div>
@@ -1248,7 +1274,8 @@
                     let typeBadge = '';
                     let borderHighlight = 'hover:border-blue-500';
                     
-                    const isTwoColor = card.conditions && card.conditions.length >= 2;
+                    const normConds = card.conditions ? normalizeConditionString(card.conditions) : '';
+                    const isTwoColor = normConds.length >= 2;
                     const speciesStr = card.species || '';
 
                     if (speciesStr.includes('ファスト') || (isTwoColor && !speciesStr.includes('基礎'))) {
@@ -1275,7 +1302,7 @@
                             </div>
                             <div class="my-2">
                                 <h3 class="text-xs font-bold text-slate-200 group-hover:text-blue-300 transition-colors">${card.name}</h3>
-                                <p class="text-[9px] text-slate-500 mt-1">供給条件: <span class="font-mono text-emerald-400 font-bold">${card.conditions || '無'}</span></p>
+                                <p class="text-[9px] text-slate-500 mt-1">供給条件: <span class="font-mono text-emerald-400 font-bold">${normConds || '無'}</span></p>
                             </div>
                             <div class="flex justify-between items-center text-[10px] mt-1 pt-1 border-t border-slate-900">
                                 <span class="text-blue-400 font-mono">${card.scry ? '👁️占術あり (デッキ底操作)' : '⛰️通常領土'}</span>
@@ -1329,7 +1356,8 @@
 
                 for (let i = 0; i < availableLands.length; i++) {
                     if (usedLandIndices.has(i)) continue;
-                    if (availableLands[i].includes(reqColor)) {
+                    let landNorm = availableLands[i].normalizedConditions || normalizeConditionString(availableLands[i].conditions);
+                    if (landNorm.includes(reqColor)) {
                         usedLandIndices.add(i);
                         if (match(reqIndex + 1, usedLandIndices)) return true;
                         usedLandIndices.delete(i);
@@ -1344,14 +1372,16 @@
             let allRequired = [];
             mustCardObjects.forEach(card => {
                 if (card && card.conditions) {
-                    allRequired = allRequired.concat(card.conditions.split(''));
+                    let norm = normalizeConditionString(card.conditions);
+                    allRequired = allRequired.concat(norm.split(''));
                 }
             });
 
             let availableColors = [];
             activeTerritories.forEach(land => {
-                if (land && land.conditions) {
-                    availableColors = availableColors.concat(land.conditions.split(''));
+                let norm = land.normalizedConditions || normalizeConditionString(land.conditions);
+                if (norm) {
+                    availableColors = availableColors.concat(norm.split(''));
                 }
             });
 
@@ -1364,7 +1394,7 @@
             return needed;
         }
 
-        // --- 🎲 モンテカルロシミュレーター（必須0枚対応版） ---
+        // --- 🎲 モンテカルロシミュレーター（略記・正規化対応版） ---
         runSimulationBtn.addEventListener('click', () => {
             const runs = parseInt(simRunsSelect.value, 10);
             const mustAndIds = Object.entries(state.conditions).filter(([_, type]) => type === 'must_and').map(([id]) => id);
@@ -1428,7 +1458,8 @@
                             let nextLand = shuffledTerritory[nextLandIndex];
                             
                             let neededColors = getNeededColors(mustAndCardObjects, activeTerritories);
-                            let nextLandColors = nextLand.conditions ? nextLand.conditions.split('') : [];
+                            let nextNorm = nextLand.normalizedConditions || normalizeConditionString(nextLand.conditions);
+                            let nextLandColors = nextNorm ? nextNorm.split('') : [];
 
                             let isUseful = nextLandColors.some(color => neededColors.includes(color));
                             if (!isUseful) {
@@ -1442,13 +1473,14 @@
 
                         if (hasAllMustAnd && hasAnyMustOr) {
                             let allPlayable = mustAndCardObjects.every(card => {
-                                let reqColors = card.conditions ? card.conditions.split('') : [];
-                                let availColors = activeTerritories.map(land => land.conditions ? land.conditions.split('') : []);
-                                let conditionsMet = canSatisfyConditions(reqColors, availColors);
+                                let normCard = normalizeConditionString(card.conditions);
+                                let reqColors = normCard ? normCard.split('') : [];
+                                let conditionsMet = canSatisfyConditions(reqColors, activeTerritories);
 
                                 let availCost = 0;
                                 activeTerritories.forEach(land => {
-                                    const isTwoColor = land.conditions && land.conditions.length >= 2;
+                                    let landNorm = land.normalizedConditions || normalizeConditionString(land.conditions);
+                                    const isTwoColor = landNorm && landNorm.length >= 2;
                                     const isMoveIn = isTwoColor && T >= 3 && land.turnPlayed === T;
                                     if (!isMoveIn) availCost += 1;
                                 });
