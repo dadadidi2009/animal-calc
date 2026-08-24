@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アニマルカードゲーム Web確率計算機 ver 0.2608260245</title>
+    <title>アニマルカードゲーム Web確率計算機 ver 0.2608260256</title>
     <!-- Tailwind CSS & Chart.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -32,7 +32,7 @@
             <h1 class="text-xl font-bold text-emerald-400 flex items-center gap-2">
                 🐾 アニマルカードゲーム Web確率計算機
                 <span class="text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono">
-                    ver 0.2608260245
+                    ver 0.2608260256
                 </span>
             </h1>
             <span class="text-xs bg-slate-800 text-slate-400 px-3 py-1 rounded-full border border-slate-700 font-mono hidden sm:inline">
@@ -704,10 +704,10 @@
 
         let territoryYCount = 1;
 
+        // 【修正】判定用略称への内部正規化（内部処理用）
         function normalizeConditionString(cond) {
             if (!cond) return "";
             let s = cond.toString().trim();
-            // 要望②：略称の1文字（平・山・水・森）へ変換するマッピング
             const map = { '平野': '平', '山岳': '山', '水生': '水', '森林': '森', '平': '平', '山': '山', '水': '水', '森': '森', '夜': '夜' };
             let result = "";
             for (let i = 0; i < s.length; i++) {
@@ -716,6 +716,23 @@
             }
             result = result.replace(/水域/g, '水');
             return result;
+        }
+
+        // 【追加】表示用：略称（平・山・水・森）をメイン・領土デッキ内で正式名称等に戻さず「1文字の略称」として表示するためのフォーマッター
+        function formatDisplayCondition(cond) {
+            if (!cond) return "";
+            let norm = normalizeConditionString(cond);
+            // デッキ内表示では略称の1文字で表示させるための変換
+            let displayStr = "";
+            for (let i = 0; i < norm.length; i++) {
+                let c = norm[i];
+                if (['平', '山', '水', '森', '夜'].includes(c)) {
+                    displayStr += c;
+                } else {
+                    displayStr += c;
+                }
+            }
+            return displayStr;
         }
 
         document.getElementById('btnDecTerritoryY').addEventListener('click', () => {
@@ -775,10 +792,13 @@
             const currentMode = territoryModeSelect.value;
 
             if (currentMode === 'single') {
-                const selectedAttr = normalizeConditionString(targetAttributeSelect.value || '平野');
+                // セレクトボックスの選択値（「平野」など）を内部の略称1文字（「平」など）に変換して検索・条件判定を行わせる
+                const rawAttr = targetAttributeSelect.value || '平野';
+                const selectedAttr = normalizeConditionString(rawAttr); // 例: 「平野」→「平」
                 const requiredY = territoryYCount;
 
-                territoryTableTitle.textContent = `📈 ターン別・領土「${targetAttributeSelect.value}条件」到達確率 (${requiredY}枚以上)`;
+                // 枠内ユーザー表示は「平野条件」などの正式名称を維持
+                territoryTableTitle.textContent = `📈 ターン別・領土「${rawAttr}条件」到達確率 (${requiredY}枚以上)`;
 
                 let successCounts = Array(maxTurn).fill(0);
 
@@ -1184,7 +1204,8 @@
                         ? (Array.isArray(card.abilities) ? card.abilities.join('<br>') : card.abilities.toString()) 
                         : '効果なし';
                     
-                    const displayConditions = card.conditions ? normalizeConditionString(card.conditions) : '';
+                    // デッキ内表示では略称の1文字で表示させる
+                    const displayConditions = card.conditions ? formatDisplayCondition(card.conditions) : '';
 
                     if (isDetailed) {
                         cardNode.className = `relative group ${bgClass} border ${borderClass} rounded-xl p-4 hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[220px]`;
@@ -1301,7 +1322,7 @@
                     let typeBadge = '';
                     let borderHighlight = 'hover:border-blue-500';
                     
-                    const normConds = card.conditions ? normalizeConditionString(card.conditions) : '';
+                    const normConds = card.conditions ? formatDisplayCondition(card.conditions) : '';
                     const isTwoColor = normConds.length >= 2;
                     const speciesStr = card.species || '';
 
@@ -1507,7 +1528,7 @@
                                 activeTerritories.forEach(land => {
                                     let landNorm = land.normalizedConditions || normalizeConditionString(land.conditions);
                                     const isTwoColor = landNorm && landNorm.length >= 2;
-                                    const isMoveIn = isTwoCode && T >= 3 && land.turnPlayed === T; // 修正済みの変数名
+                                    const isMoveIn = isTwoColor && T >= 3 && land.turnPlayed === T;
                                     if (!isMoveIn) availCost += 1;
                                 });
                                 let costMet = availCost >= card.cost;
