@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アニマルカードゲーム Web確率計算機 ver 0.2608240653</title>
+    <title>アニマルカードゲーム Web確率計算機 ver 0.2608240710</title>
     <!-- Tailwind CSS & Chart.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -25,7 +25,7 @@
             <h1 class="text-xl font-bold text-emerald-400 flex items-center gap-2">
                 🐾 アニマルカードゲーム Web確率計算機
                 <span class="text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono">
-                    ver 0.2608240653
+                    ver 0.2608240710
                 </span>
             </h1>
             <span class="text-xs bg-slate-800 text-slate-400 px-3 py-1 rounded-full border border-slate-700 font-mono">
@@ -93,7 +93,7 @@
             </div>
         </section>
 
-        <!-- 📊 【新規特化機能】超幾何分布・ドロー確率特化計算機 (X枚目までにY枚引く確率) -->
+        <!-- 📊 【新規特化機能】超幾何分布・ドロー確率特化計算機 (7枚目以上に限定) -->
         <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2">
                 <h2 class="text-base font-bold text-emerald-400 flex items-center gap-2">
@@ -160,11 +160,11 @@
                     </div>
                 </div>
 
-                <!-- 確率一覧テーブル -->
+                <!-- 確率一覧テーブル (7枚目以上に特化) -->
                 <div class="lg:col-span-3 bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
                     <p class="text-xs font-bold text-slate-300 border-b border-slate-800 pb-1.5 mb-3 flex justify-between">
                         <span>📈 ドロー枚数(X)ごとの確率一覧</span>
-                        <span class="text-[10px] text-slate-500">※アニマルカードゲーム換算を自動併記</span>
+                        <span class="text-[10px] text-slate-500 font-bold">※現実的な7枚（初手）〜20枚ドローのみ表示中</span>
                     </p>
                     <div class="max-h-[310px] overflow-y-auto pr-1">
                         <table class="w-full text-left border-collapse text-xs">
@@ -376,8 +376,8 @@
 
             quickProbTableBody.innerHTML = '';
 
-            // X = 1 から 20枚目までの一覧を表示
-            for (let X = 1; X <= 20; X++) {
+            // 🟢 【①の対応】表示をスッキリさせるため、1〜6枚ドローを非表示化し「7枚目（初期手札）」〜「20枚目」のみを表示ループ
+            for (let X = 7; X <= 20; X++) {
                 const prob = calculateHypergeometric(N, K, X, Y, type);
                 const percent = (prob * 100).toFixed(1);
 
@@ -500,8 +500,8 @@
             // プレフィックスとカード番号を抽出
             const match = s.match(/^(ACG|BP\d|BP|RYO)[-_]?(\d+)/i);
             if (match) {
-                const prefix = match[1].toUpperCase(); 
-                const num = parseInt(match[2], 10);     
+                const prefix = match.toUpperCase(); 
+                const num = parseInt(match, 10);     
                 return `${prefix}-${num}`;
             }
             return s.toUpperCase();
@@ -514,7 +514,7 @@
                 return normalizeCardListId(rawId);
             }
 
-            // 🟢 BP1-038がBP1-039 (ID 5039) として誤登録されている問題の自動補正
+            // BP1-038がBP1-039 (ID 5039) として誤登録されている問題の自動補正
             if (num === 5039) {
                 console.log("🛠️ ワークアラウンド適用: デッキID 5039 (BP1-039) を BP1-038 に自動補正しました。");
                 return "BP1-38";
@@ -662,15 +662,14 @@
             }
         }
 
-        // --- ①＆③ デッキインポート処理（選択ファイルの自動ロード） ---
+        // 🟢 【②の対応】デッキインポート処理（選択ファイルの自動ロード）FileReaderバグ完全修正コード
         let selectedFile = null;
-        
+
         deckFileInput.addEventListener('change', (e) => {
             const files = e.target.files;
             if (files && files.length > 0) {
-                selectedFile = files; 
+                selectedFile = files; // 単一の File を取得
 
-                // 選択時に自動転記
                 const reader = new FileReader();
                 reader.onload = function(evt) {
                     deckJsonInput.value = evt.target.result;
@@ -698,10 +697,10 @@
             reader.onerror = function() {
                 alert("ファイルの読み取りに失敗しました。");
             };
-            reader.readAsText(selectedFile); 
+            reader.readAsText(selectedFile);
         });
 
-        // 🟢 バグ切り分け専用：純粋テキスト読み込みチェッカーの動作
+        // 🟢 バグ切り分け専用：こちらもFileListではなく単一のFileオブジェクト  を取得するように完全補正
         const debugFileInput = document.getElementById('debugFileInput');
         const debugLoadBtn = document.getElementById('debugLoadBtn');
         const debugTextOutput = document.getElementById('debugTextOutput');
@@ -713,7 +712,7 @@
                 return;
             }
             
-            const file = files;
+            const file = files; // 🟢 files (FileList) ではなくfiles (File) を取得
             const reader = new FileReader();
             reader.onload = function(evt) {
                 debugTextOutput.value = evt.target.result;
@@ -877,7 +876,7 @@
                     `;
                 }
 
-                // 🟢 追加：メインデッキカードをクリックした際、上の特化計算機に投入枚数を自動で送り再計算する
+                // メインデッキカードをクリックした際、上の特化計算機に投入枚数を自動で送り再計算する
                 cardNode.addEventListener('click', () => {
                     // 1. 特化計算機への連動
                     quickKInput.value = count;
