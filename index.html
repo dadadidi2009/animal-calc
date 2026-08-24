@@ -80,30 +80,57 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-                <div class="md:col-span-2 flex flex-col sm:flex-row gap-3 items-end">
-                    <div class="flex-grow w-full">
-                        <label class="block text-xs font-bold text-slate-400 mb-2">① デッキJSONファイルを選択</label>
-                        <input type="file" id="deckFileInput" accept=".json" 
-                            class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700 cursor-pointer border border-slate-800 p-1.5 rounded-lg bg-slate-950">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-2">① デッキJSONファイルを選択して自動展開</label>
+                    <input type="file" id="deckFileInput" accept=".json" 
+                        class="block w-full text-xs text-slate-400 file:mr-3 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700 cursor-pointer border border-slate-800 p-1.5 rounded-lg bg-slate-950">
+                </div>
+                <!-- 内部処理専用テキストボックス（ユーザーには非表示） -->
+                <div>
+                    <textarea id="deckJsonInput" rows="1" class="hidden"></textarea>
+                    <div class="text-xs text-slate-400 bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center gap-2">
+                        <span class="text-emerald-400 font-bold">💡 操作案内:</span>
+                        <span>ファイルを指定するだけで、デッキの展開および分析準備が自動で行われます。</span>
                     </div>
-                    <button id="loadTextBtn" class="w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg border border-slate-700 transition-all text-xs h-[38px] whitespace-nowrap">
-                        📄 ファイルをテキスト読込する
-                    </button>
                 </div>
-                <div class="w-full">
-                    <label class="block text-xs font-bold text-slate-400 mb-2">貼り付け欄 / テキスト表示ボックス</label>
-                    <textarea id="deckJsonInput" rows="1" 
-                        class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs font-mono text-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 h-[38px] resize-none"
-                        placeholder='{"mainDeck": {"20": 2}}'></textarea>
-                </div>
-            </div>
-            <div class="flex justify-end gap-2 text-xs pt-2">
-                <button id="importBtn" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-lg hover:shadow-emerald-500/20 transition-all">
-                    デッキを展開して分析準備
-                </button>
             </div>
         </details>
+
+        <!-- 3. デッキ展開表示エリア (移動完了) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <details class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl" open>
+                <summary class="flex justify-between items-center cursor-pointer select-none border-b border-slate-800 pb-2 mb-4">
+                    <h2 class="text-base font-bold text-emerald-300">
+                        🃏 メインデッキ <span id="mainDeckCount" class="text-sm font-normal text-slate-400">(0枚)</span>
+                    </h2>
+                    <span class="text-xs text-slate-400">▼ 展開/折りたたむ</span>
+                </summary>
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-3">
+                        <button id="resetConditionsBtn" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2.5 py-1 rounded border border-slate-700 transition-colors">
+                            🔄 条件リセット
+                        </button>
+                        <span class="text-[10px] text-slate-400">💡 カードクリックで判定条件を切替</span>
+                    </div>
+                </div>
+                <div id="mainDeckGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    <p class="col-span-full text-center text-slate-500 py-12 text-sm font-bold">デッキJSONファイルをインポートしてください。</p>
+                </div>
+            </details>
+
+            <details class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl" open>
+                <summary class="flex justify-between items-center cursor-pointer select-none border-b border-slate-800 pb-2 mb-4">
+                    <h2 class="text-base font-bold text-blue-300">
+                        ⛰️ 領土デッキ <span id="territoryDeckCount" class="text-sm font-normal text-slate-400">(0枚)</span>
+                    </h2>
+                    <span class="text-xs text-slate-400">▼ 展開/折りたたむ</span>
+                </summary>
+                <div id="territoryDeckGrid" class="grid grid-cols-2 gap-4">
+                    <p class="col-span-full text-center text-slate-500 py-12 text-sm">領土デッキが表示されます。</p>
+                </div>
+            </details>
+        </div>
 
         <!-- 📊 【特化機能】超幾何分布・ドロー確率特化計算機 -->
         <details class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
@@ -393,48 +420,13 @@
                 </div>
             </div>
         </details>
-
-        <!-- 3. デッキ展開表示エリア -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <details class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl" open>
-                <summary class="flex justify-between items-center cursor-pointer select-none border-b border-slate-800 pb-2 mb-4">
-                    <h2 class="text-base font-bold text-emerald-300">
-                        🃏 メインデッキ <span id="mainDeckCount" class="text-sm font-normal text-slate-400">(0枚)</span>
-                    </h2>
-                    <span class="text-xs text-slate-400">▼ 展開/折りたたむ</span>
-                </summary>
-                <div class="flex justify-between items-center mb-4">
-                    <div class="flex items-center gap-3">
-                        <button id="resetConditionsBtn" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2.5 py-1 rounded border border-slate-700 transition-colors">
-                            🔄 条件リセット
-                        </button>
-                        <span class="text-[10px] text-slate-400">💡 カードクリックで判定条件を切替</span>
-                    </div>
-                </div>
-                <div id="mainDeckGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    <p class="col-span-full text-center text-slate-500 py-12 text-sm font-bold">デッキJSONファイルをインポートしてください。</p>
-                </div>
-            </details>
-
-            <details class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl" open>
-                <summary class="flex justify-between items-center cursor-pointer select-none border-b border-slate-800 pb-2 mb-4">
-                    <h2 class="text-base font-bold text-blue-300">
-                        ⛰️ 領土デッキ <span id="territoryDeckCount" class="text-sm font-normal text-slate-400">(0枚)</span>
-                    </h2>
-                    <span class="text-xs text-slate-400">▼ 展開/折りたたむ</span>
-                </summary>
-                <div id="territoryDeckGrid" class="grid grid-cols-2 gap-4">
-                    <p class="col-span-full text-center text-slate-500 py-12 text-sm">領土デッキが表示されます。</p>
-                </div>
-            </details>
-        </div>
     </main>
 
     <footer class="border-t border-slate-800 bg-slate-950 text-center py-4 text-xs text-slate-500">
         🐾 アニマルカードゲーム Web確率計算機 (C) 2026
     </footer>
 
-    <!-- JavaScript 制御 (変更なし) -->
+    <!-- JavaScript 制御 -->
     <script>
         const state = {
             mainDeck: {},       
@@ -448,8 +440,6 @@
         // DOM
         const deckFileInput = document.getElementById('deckFileInput');
         const deckJsonInput = document.getElementById('deckJsonInput');
-        const loadTextBtn = document.getElementById('loadTextBtn');
-        const importBtn = document.getElementById('importBtn');
         const mainDeckGrid = document.getElementById('mainDeckGrid');
         const territoryDeckGrid = document.getElementById('territoryDeckGrid');
         const mainDeckCountEl = document.getElementById('mainDeckCount');
@@ -459,7 +449,7 @@
         const runSimulationBtn = document.getElementById('runSimulationBtn');
         const simStatusText = document.getElementById('simStatusText');
         const simRunsSelect = document.getElementById('simRuns');
-        const territorySimRunsSelect = document.getElementById('territorySimRuns'); // 追加
+        const territorySimRunsSelect = document.getElementById('territorySimRuns');
         const chartPlaceholder = document.getElementById('chartPlaceholder');
         const bannerText = document.getElementById('bannerText');
         const loadProgressCount = document.getElementById('loadProgressCount');
@@ -1063,34 +1053,22 @@
             }
         }
 
-        let selectedFile = null;
         deckFileInput.addEventListener('change', (e) => {
             const files = e.target.files;
             if (files && files.length > 0) {
-                selectedFile = files[0];
+                const file = files[0];
                 const reader = new FileReader();
-                reader.onload = function(evt) { deckJsonInput.value = evt.target.result; };
-                reader.readAsText(selectedFile);
-            }
-        });
-
-        loadTextBtn.addEventListener('click', () => {
-            if (!selectedFile) return alert("ファイルが選択されていません。");
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                deckJsonInput.value = evt.target.result;
-                alert("ファイルのテキスト読み込みに成功しました！");
-            };
-            reader.readAsText(selectedFile);
-        });
-
-        importBtn.addEventListener('click', () => {
-            try {
-                const parsed = robustJsonParse(deckJsonInput.value || '{}'); 
-                deckJsonInput.value = JSON.stringify(parsed, null, 2);
-                executeImport(parsed);
-            } catch (err) {
-                alert('JSONテキストの解析に失敗しました。\n詳細: ' + err.message);
+                reader.onload = function(evt) {
+                    const text = evt.target.result;
+                    deckJsonInput.value = text;
+                    try {
+                        const parsed = robustJsonParse(text);
+                        executeImport(parsed);
+                    } catch (err) {
+                        alert('JSONテキストの解析に失敗しました。\n詳細: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
             }
         });
 
@@ -1423,7 +1401,6 @@
             return needed;
         }
 
-        // --- 🎲 メインモンテカルロシミュレーター ---
         runSimulationBtn.addEventListener('click', () => {
             const runs = parseInt(simRunsSelect.value, 10);
             const mustAndIds = Object.entries(state.conditions).filter(([_, type]) => type === 'must_and').map(([id]) => id);
