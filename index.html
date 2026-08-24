@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アニマルカードゲーム Web確率計算機 ver 0.2608240714</title>
+    <title>アニマルカードゲーム Web確率計算機 ver 0.2608242347</title>
     <!-- Tailwind CSS & Chart.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -665,16 +665,13 @@
             }
         }
 
-        // 🟢 【完全修正】単一の File オブジェクト (files) を正確に取得・処理するハンドラ
-        let selectedFile = null;
-
         // 🟢 【完全修正】単一の File オブジェクト (files[0]) を正確に取得・処理するハンドラ
         let selectedFile = null;
 
         deckFileInput.addEventListener('change', (e) => {
             const files = e.target.files;
             if (files && files.length > 0) {
-                selectedFile = files[0]; // 🟢 files[0] で単一の File オブジェクトを取得
+                selectedFile = files[0];
 
                 const reader = new FileReader();
                 reader.onload = function(evt) {
@@ -698,7 +695,8 @@
             const reader = new FileReader();
             reader.onload = function(evt) {
                 deckJsonInput.value = evt.target.result;
-                alert("ファイルのテキスト読み込みに成功しました！\n右側のテキスト貼り付け欄に中身が表示されています。");
+                alert("ファイルのテキスト読み込みに成功しました！
+右側のテキスト貼り付け欄に中身が表示されています。");
             };
             reader.onerror = function() {
                 alert("ファイルの読み取りに失敗しました。");
@@ -706,7 +704,6 @@
             reader.readAsText(selectedFile);
         });
 
-        // 🟢 【完全修正】デバッグチェッカーも単一の File オブジェクト(files[0])を取得するように補正
         const debugFileInput = document.getElementById('debugFileInput');
         const debugLoadBtn = document.getElementById('debugLoadBtn');
         const debugTextOutput = document.getElementById('debugTextOutput');
@@ -718,7 +715,7 @@
                 return;
             }
             
-            const file = files[0]; // 🟢 files[0] で単一の File を取得
+            const file = files[0];
             const reader = new FileReader();
             reader.onload = function(evt) {
                 debugTextOutput.value = evt.target.result;
@@ -730,81 +727,6 @@
             };
             reader.readAsText(file);
         });
-Gemini Notebook への再指示用テキスト
-AIツールやNotebook等で修正を行っている場合は、以下の文章をそのまま貼り付けて指示を出してみてください。
-
-Plaintext
-前回の修正が正しく反映されていません。
-
-JavaScript内の `deckFileInput` および `debugLoadBtn` のイベント処理で、
-`selectedFile = files;` や `const file = files;` となっており、`FileList`（配列）をそのまま `FileReader.readAsText()` に渡してしまっているためエラーになります。
-
-必ず `files[0]` と指定して単一の `File` オブジェクトを取り出す必要があります。
-
-コード内の `// 🟢 【完全修正】単一の File オブジェクト (files) を正確に取得・処理するハンドラ` から `debugLoadBtn` のリスナー終了部分までを、以下のように修正してください。
-
-【修正用コード】
-let selectedFile = null;
-
-deckFileInput.addEventListener('change', (e) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-        selectedFile = files[0];
-
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-            deckJsonInput.value = evt.target.result;
-        };
-        reader.onerror = function() {
-            console.error("ファイルの自動転記に失敗しました。");
-        };
-        reader.readAsText(selectedFile);
-    } else {
-        selectedFile = null;
-    }
-});
-
-loadTextBtn.addEventListener('click', () => {
-    if (!selectedFile) {
-        alert("ファイルが選択されていません。先に「ファイルを選択」からデッキJSONファイルを選んでください。");
-        return;
-    }
-    
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-        deckJsonInput.value = evt.target.result;
-        alert("ファイルのテキスト読み込みに成功しました！\n右側のテキスト貼り付け欄に中身が表示されています。");
-    };
-    reader.onerror = function() {
-        alert("ファイルの読み取りに失敗しました。");
-    };
-    reader.readAsText(selectedFile);
-});
-
-const debugFileInput = document.getElementById('debugFileInput');
-const debugLoadBtn = document.getElementById('debugLoadBtn');
-const debugTextOutput = document.getElementById('debugTextOutput');
-
-debugLoadBtn.addEventListener('click', () => {
-    const files = debugFileInput.files;
-    if (!files || files.length === 0) {
-        alert("検証用のファイルが選択されていません。チェッカーエリアの「ファイルを選択」から選んでください。");
-        return;
-    }
-    
-    const file = files[0];
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-        debugTextOutput.value = evt.target.result;
-        alert("【検証成功】ファイルをプレーンテキストとして正常に読み込み、右側のエリアに表示しました！");
-    };
-    reader.onerror = function(err) {
-        alert("【検証失敗】ブラウザによるファイル読み込み中にエラーが発生しました。");
-        console.error(err);
-    };
-    reader.readAsText(file);
-});
-
 
         // 展開実行ボタン
         importBtn.addEventListener('click', () => {
@@ -813,7 +735,9 @@ debugLoadBtn.addEventListener('click', () => {
                 deckJsonInput.value = JSON.stringify(parsed, null, 2);
                 executeImport(parsed);
             } catch (err) {
-                alert('JSONテキストの解析に失敗しました。カッコやカンマの不整合がないか確認してください。\n\n詳細: ' + err.message);
+                alert('JSONテキストの解析に失敗しました。カッコやカンマの不整合がないか確認してください。
+
+詳細: ' + err.message);
             }
         });
 
@@ -856,7 +780,9 @@ debugLoadBtn.addEventListener('click', () => {
                 updateStatusText();
             } catch (err) {
                 console.error("インポート展開エラー:", err);
-                alert("デッキの展開中にエラーが発生しました。\n\n詳細: " + err.message);
+                alert("デッキの展開中にエラーが発生しました。
+
+詳細: " + err.message);
             }
         }
 
