@@ -152,17 +152,21 @@
                 <!-- パラメータ調整エリア -->
                 <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-4">
                     
-                    <!-- 要望③：目標確率からの逆算を独立させ、パラメータの前に配置。またデッキ全体の枚数調整を追加 -->
+                    <!-- 目標確率からの逆算セクション（デッキ全体の枚数Nを追加） -->
                     <div class="space-y-1.5 pb-3 border-b border-slate-800/80">
                         <label class="block text-[11px] font-bold text-indigo-300">🔍 目標確率から最低投入枚数を逆算</label>
-                        <div class="grid grid-cols-2 gap-2">
+                        <div class="grid grid-cols-3 gap-1.5">
+                            <div>
+                                <label class="block text-[10px] text-slate-400">デッキ枚数</label>
+                                <input type="number" id="revNInput" value="40" min="1" max="100" class="w-full bg-slate-900 border border-slate-800 rounded px-1.5 py-1 text-xs text-center text-emerald-400 font-mono focus:outline-none">
+                            </div>
                             <div>
                                 <label class="block text-[10px] text-slate-400">引く枚数(X)</label>
-                                <input type="number" id="revXInput" value="7" min="1" max="100" class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-center text-emerald-400 font-mono focus:outline-none">
+                                <input type="number" id="revXInput" value="7" min="1" max="100" class="w-full bg-slate-900 border border-slate-800 rounded px-1.5 py-1 text-xs text-center text-emerald-400 font-mono focus:outline-none">
                             </div>
                             <div>
                                 <label class="block text-[10px] text-slate-400">目標確率(%)</label>
-                                <input type="number" id="revPInput" value="80" min="1" max="100" class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-center text-emerald-400 font-mono focus:outline-none">
+                                <input type="number" id="revPInput" value="80" min="1" max="100" class="w-full bg-slate-900 border border-slate-800 rounded px-1.5 py-1 text-xs text-center text-emerald-400 font-mono focus:outline-none">
                             </div>
                         </div>
                         <button id="calcRevKBtn" class="w-full mt-1 py-1.5 bg-indigo-600/60 hover:bg-indigo-500 border border-indigo-500/50 text-indigo-100 font-bold rounded text-xs transition-all">最低投入枚数を計算</button>
@@ -296,7 +300,6 @@
                                 <option value="山岳">山岳条件</option>
                                 <option value="水生">水生条件</option>
                                 <option value="森林">森林条件</option>
-                                <!-- 要望④：森林条件の下に「夜条件（未実装）」を追加 -->
                                 <option value="夜">夜条件（未実装）</option>
                             </select>
                         </div>
@@ -332,7 +335,6 @@
                                 <span class="text-slate-300">森林条件</span>
                                 <input type="number" id="reqShinrin" value="0" min="0" max="10" class="w-14 bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-center text-blue-400 font-mono text-xs">
                             </div>
-                            <!-- 要望④：複数条件モード側でも森林条件の下に「夜条件（未実装）」を追加 -->
                             <div class="flex justify-between items-center text-xs pt-1 border-t border-slate-800/80">
                                 <span class="text-indigo-300">夜条件（未実装）</span>
                                 <input type="number" id="reqYoru" value="0" min="0" max="10" class="w-14 bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-center text-indigo-400 font-mono text-xs">
@@ -468,7 +470,7 @@
         let quickParams = {
             N: 40,
             K: 3,
-            Y: 1, // 要望②：初期値は1を維持
+            Y: 1,
             K_not: 0,
             Z: 3
         };
@@ -571,7 +573,6 @@
 
         quickNInput.addEventListener('input', recalculateQuickProbabilities);
         
-        // 要望②：K（目標カードの投入枚数）が変わっても、ユーザーが意図的に0としない限りYを勝手に0にしない
         quickKInput.addEventListener('input', () => {
             const K = parseInt(quickKInput.value, 10) || 0;
             if (K > 0 && quickParams.Y === 0) {
@@ -613,7 +614,6 @@
             recalculateQuickProbabilities();
         });
 
-        // 要望②：Yのマイナスボタン（ユーザーの意図的な操作以外では0にしない制御）
         document.getElementById('btnDecY').addEventListener('click', () => {
             if (quickParams.Y > 0) {
                 quickParams.Y = quickParams.Y - 1;
@@ -649,13 +649,14 @@
             recalculateQuickProbabilities();
         });
 
+        const revNInput = document.getElementById('revNInput');
         const revXInput = document.getElementById('revXInput');
         const revPInput = document.getElementById('revPInput');
         const calcRevKBtn = document.getElementById('calcRevKBtn');
         const revResult = document.getElementById('revResult');
 
         calcRevKBtn.addEventListener('click', () => {
-            const N = Math.max(1, parseInt(quickNInput.value, 10) || 40);
+            const N = Math.max(1, parseInt(revNInput.value, 10) || 40);
             const X = Math.max(1, parseInt(revXInput.value, 10) || 7);
             const targetP = Math.max(0, Math.min(100, parseFloat(revPInput.value) || 80)) / 100;
             const K_not = Math.max(0, parseInt(quickKNotInput.value, 10) || 0);
@@ -910,7 +911,7 @@
             });
             quickKInput.value = 0;
             quickKNotInput.value = 0;
-            quickParams.Y = 1; // リセット時もデフォルト1以上を保持
+            quickParams.Y = 1;
             quickYValue.textContent = "1 枚";
             quickCardNameLabel.textContent = "自由入力モード (必須0枚)";
             recalculateQuickProbabilities();
@@ -1103,9 +1104,10 @@
                     });
                 }
 
-                // 要望③：デッキを読み込んだら、超几何分布計算機のデッキ総枚数(N)にその総枚数を自動反映する（初期値40対応）
+                // デッキを読み込んだら、計算パラメータ(N)と逆算エリアのデッキ枚数に自動反映
                 if (mainTotal > 0) {
                     quickNInput.value = mainTotal;
+                    revNInput.value = mainTotal;
                     recalculateQuickProbabilities();
                 }
 
@@ -1247,6 +1249,7 @@
                     let mainTotal = 0;
                     Object.values(state.mainDeck).forEach(c => mainTotal += c);
                     quickNInput.value = mainTotal || 40;
+                    revNInput.value = mainTotal || 40;
 
                     if (orCount > 0) {
                         quickKInput.value = orCount;
