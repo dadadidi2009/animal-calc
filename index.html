@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アニマルカードゲーム Web確率計算機 ver 0.260825</title>
+    <title>アニマルカードゲーム Web確率計算機 ver 0.260826</title>
     <!-- Tailwind CSS & Chart.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -25,7 +25,7 @@
             <h1 class="text-xl font-bold text-emerald-400 flex items-center gap-2">
                 🐾 アニマルカードゲーム Web確率計算機
                 <span class="text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono">
-                    ver 0.260825
+                    ver 0.260826
                 </span>
             </h1>
             <span class="text-xs bg-slate-800 text-slate-400 px-3 py-1 rounded-full border border-slate-700 font-mono">
@@ -221,6 +221,86 @@
             </div>
         </section>
 
+        <!-- ⛰️ 【新機能】領土デッキ属性別・ターン別ドロー確率チェッカー -->
+        <section id="territoryCheckSection" class="hidden bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-2">
+                <h2 class="text-base font-bold text-blue-400 flex items-center gap-2">
+                    ⛰️ 領土デッキ属性別・ターン別到達確率チェッカー (T1〜T10)
+                </h2>
+                <div class="flex items-center gap-2">
+                    <span class="text-[11px] text-slate-400">表示モード:</span>
+                    <select id="territoryModeSelect" class="bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-xs text-blue-300 font-mono focus:outline-none">
+                        <option value="single">単一属性フィルター</option>
+                        <option value="combo">複合条件 (例: 平野1 + 山岳1)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <p class="text-xs text-slate-400 leading-relaxed">
+                領土デッキに投入されている属性（平野、山岳、水生、森林など）に基づき、<span class="text-blue-300 font-bold">「〇ターン目の時点までに山札の上から何枚めくられているか」</span>から算出される属性別・必要枚数別の到達確率を一覧表示します。
+            </p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+                <!-- 属性セレクターコントロール -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-4">
+                    <p class="text-xs font-bold text-slate-300 border-b border-slate-800/60 pb-1.5">
+                        ⚙️ 領土条件の選択
+                    </p>
+
+                    <!-- 単一モード用 -->
+                    <div id="singleTerritoryControl" class="space-y-3">
+                        <div class="space-y-1.5">
+                            <label class="block text-[11px] font-bold text-slate-400">対象の属性</label>
+                            <select id="targetAttributeSelect" class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-blue-300 font-mono focus:outline-none">
+                                <!-- 動的生成 -->
+                            </select>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="block text-[11px] font-bold text-slate-400">必要枚数 (Y枚以上)</label>
+                            <div class="flex items-center gap-1">
+                                <button id="btnDecTerritoryY" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-bold text-xs">-</button>
+                                <span id="territoryYValue" class="w-full bg-slate-900 border border-slate-800 rounded py-1 text-xs text-center text-blue-400 font-mono font-bold">1 枚</span>
+                                <button id="btnIncTerritoryY" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-bold text-xs">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 複合モード用 -->
+                    <div id="comboTerritoryControl" class="hidden space-y-3">
+                        <div class="text-[11px] text-slate-400 leading-relaxed">
+                            領土デッキ内のすべての属性ペアについて、T3・T5・T10時点での同時達成確率を自動算出します。
+                        </div>
+                    </div>
+
+                    <button id="calcTerritoryBtn" class="w-full mt-2 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded text-xs transition-all shadow-lg">
+                        🔄 確率を再計算する
+                    </button>
+                </div>
+
+                <!-- 領土確率テーブル -->
+                <div class="lg:col-span-3 bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+                    <p class="text-xs font-bold text-slate-300 border-b border-slate-800 pb-1.5 mb-3 flex justify-between">
+                        <span id="territoryTableTitle">📈 ターン別・領土属性到達確率一覧</span>
+                        <span class="text-[10px] text-slate-500 font-bold">※領土デッキ(通常10枚)を対象</span>
+                    </p>
+                    <div class="max-h-[350px] overflow-y-auto pr-1">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr id="territoryTableHead" class="border-b border-slate-800/60 text-slate-500 font-bold text-[10px] uppercase tracking-wider">
+                                    <th class="py-2 pl-2 w-1/4">ターン (T)</th>
+                                    <th class="py-2 w-1/2">確率の視覚化グラフ</th>
+                                    <th class="py-2 pr-2 text-right w-1/4">達成確率</th>
+                                </tr>
+                            </thead>
+                            <tbody id="territoryProbTableBody">
+                                <!-- JSで動的レンダリング -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- 2. シミュレーション設定 ＆ グラフ表示 -->
         <section id="simulatorControlSection" class="hidden bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
             <h2 class="text-base font-bold text-amber-400 flex items-center gap-2 border-b border-slate-800 pb-2">
@@ -233,7 +313,7 @@
                     <div class="space-y-1.5 text-xs text-slate-300 leading-relaxed">
                         <p class="font-bold text-slate-400">⛰️ シミュレーション判定ルール:</p>
                         <ul class="list-disc list-inside space-y-1 text-slate-400">
-                            <li><strong>マリガンボトム処理</strong>: 1T開始前、初期手札7枚から不純物優先で2枚を山札の底に送ります（手札5枚へ）。</li>
+                            <li><strong>マリガンボトム処理</strong>: 1T開始前、初期手札7枚から不純物優先で2枚を山札の底に送ります（手札5枚へ）。<strong>※必須0枚時は不純物のみ排除</strong></li>
                             <li><strong>毎ターン1ドロー</strong>: 各ターンの開始時に山札の上から1枚ドローして手札を更新します。</li>
                             <li><strong>ムーブイン</strong>: 3T以降に出た2色領土はそのターンのみコスト供給不可。</li>
                             <li><strong>占術領土</strong>: めくれた際、次ターンの領土をPeekし不要なら山札の底へ。</li>
@@ -321,6 +401,7 @@
         const mainDeckCountEl = document.getElementById('mainDeckCount');
         const territoryDeckCountEl = document.getElementById('territoryDeckCount');
         const simulatorControlSection = document.getElementById('simulatorControlSection');
+        const territoryCheckSection = document.getElementById('territoryCheckSection');
         const runSimulationBtn = document.getElementById('runSimulationBtn');
         const simStatusText = document.getElementById('simStatusText');
         const simRunsSelect = document.getElementById('simRuns');
@@ -379,6 +460,16 @@
 
         function calculateMultivariateProbability(N, K1, K2, X, Y, Z, type) {
             let totalProb = 0;
+            // 必須0枚のとき (K1 = 0) の考慮
+            if (K1 === 0) {
+                if (Y === 0) {
+                    for (let k2 = 0; k2 < Z; k2++) {
+                        totalProb += multivariateHypergeometricExact(N, 0, K2, X, 0, k2);
+                    }
+                }
+                return totalProb;
+            }
+
             const k1_start = Y;
             const k1_end = (type === 'exact') ? Y : Math.min(K1, X);
 
@@ -438,6 +529,9 @@
             if (quickParams.Y > K && K > 0) {
                 quickParams.Y = Math.max(1, K);
                 quickYValue.textContent = `${quickParams.Y} 枚`;
+            } else if (K === 0) {
+                quickParams.Y = 0;
+                quickYValue.textContent = `0 枚`;
             }
             recalculateQuickProbabilities();
         });
@@ -455,25 +549,35 @@
         document.getElementById('btnDecK').addEventListener('click', () => {
             const val = Math.max(0, (parseInt(quickKInput.value, 10) || 0) - 1);
             quickKInput.value = val;
-            if (quickParams.Y > val && val > 0) {
-                quickParams.Y = Math.max(1, val);
+            if (val === 0) {
+                quickParams.Y = 0;
+                quickYValue.textContent = `0 枚`;
+            } else if (quickParams.Y > val) {
+                quickParams.Y = val;
                 quickYValue.textContent = `${quickParams.Y} 枚`;
             }
             recalculateQuickProbabilities();
         });
         document.getElementById('btnIncK').addEventListener('click', () => {
-            quickKInput.value = (parseInt(quickKInput.value, 10) || 0) + 1;
+            const val = (parseInt(quickKInput.value, 10) || 0) + 1;
+            quickKInput.value = val;
+            if (quickParams.Y === 0 && val > 0) {
+                quickParams.Y = 1;
+                quickYValue.textContent = `1 枚`;
+            }
             recalculateQuickProbabilities();
         });
 
         document.getElementById('btnDecY').addEventListener('click', () => {
-            quickParams.Y = Math.max(1, quickParams.Y - 1);
+            const K = parseInt(quickKInput.value, 10) || 0;
+            const minY = K === 0 ? 0 : 1;
+            quickParams.Y = Math.max(minY, quickParams.Y - 1);
             quickYValue.textContent = `${quickParams.Y} 枚`;
             recalculateQuickProbabilities();
         });
         document.getElementById('btnIncY').addEventListener('click', () => {
             const K = parseInt(quickKInput.value, 10) || 0;
-            quickParams.Y = Math.min(K || 1, quickParams.Y + 1);
+            quickParams.Y = Math.min(K || 0, quickParams.Y + 1);
             quickYValue.textContent = `${quickParams.Y} 枚`;
             recalculateQuickProbabilities();
         });
@@ -530,7 +634,7 @@
             let foundK = -1;
             let foundProb = 0;
             
-            for (let k = Y; k <= (N - K_not); k++) {
+            for (let k = Math.max(1, Y); k <= (N - K_not); k++) {
                 let p = calculateMultivariateProbability(N, k, K_not, X, Y, Z, type);
                 if (p >= targetP) {
                     foundK = k;
@@ -549,6 +653,225 @@
             }
         });
 
+        // --- ⛰️ 領土属性チェッカー関連ロジック ---
+        let territoryParams = {
+            mode: 'single', // 'single' | 'combo'
+            targetAttr: '平野',
+            y: 1
+        };
+
+        const territoryModeSelect = document.getElementById('territoryModeSelect');
+        const singleTerritoryControl = document.getElementById('singleTerritoryControl');
+        const comboTerritoryControl = document.getElementById('comboTerritoryControl');
+        const targetAttributeSelect = document.getElementById('targetAttributeSelect');
+        const territoryYValue = document.getElementById('territoryYValue');
+        const calcTerritoryBtn = document.getElementById('calcTerritoryBtn');
+        const territoryProbTableBody = document.getElementById('territoryProbTableBody');
+        const territoryTableTitle = document.getElementById('territoryTableTitle');
+        const territoryTableHead = document.getElementById('territoryTableHead');
+
+        let territoryYCount = 1;
+
+        document.getElementById('btnDecTerritoryY').addEventListener('click', () => {
+            territoryYCount = Math.max(1, territoryYCount - 1);
+            territoryYValue.textContent = `${territoryYCount} 枚`;
+            updateTerritoryProbabilities();
+        });
+        document.getElementById('btnIncTerritoryY').addEventListener('click', () => {
+            territoryYCount = Math.min(10, territoryYCount + 1);
+            territoryYValue.textContent = `${territoryYCount} 枚`;
+            updateTerritoryProbabilities();
+        });
+
+        territoryModeSelect.addEventListener('change', (e) => {
+            territoryParams.mode = e.target.value;
+            if (territoryParams.mode === 'single') {
+                singleTerritoryControl.classList.remove('hidden');
+                comboTerritoryControl.classList.add('hidden');
+            } else {
+                singleTerritoryControl.classList.add('hidden');
+                comboTerritoryControl.classList.remove('hidden');
+            }
+            updateTerritoryProbabilities();
+        });
+
+        calcTerritoryBtn.addEventListener('click', updateTerritoryProbabilities);
+
+        function populateTerritoryAttributes() {
+            let attrSet = new Set();
+            Object.entries(state.territoryDeck).forEach(([id, count]) => {
+                const card = state.cardMap.get(id);
+                if (card && card.conditions) {
+                    // 条件文字 (例: "平", "山", "水", "森", など、または文字列全体)
+                    for (let char of card.conditions) {
+                        attrSet.add(char);
+                    }
+                }
+            });
+
+            targetAttributeSelect.innerHTML = '';
+            if (attrSet.size === 0) {
+                // デフォルトフォールバック
+                ['平', '山', '水', '森'].forEach(attr => {
+                    const opt = document.createElement('option');
+                    opt.value = attr;
+                    opt.textContent = attr + '属性';
+                    targetAttributeSelect.appendChild(opt);
+                });
+            } else {
+                attrSet.forEach(attr => {
+                    const opt = document.createElement('option');
+                    opt.value = attr;
+                    opt.textContent = attr + '属性';
+                    targetAttributeSelect.appendChild(opt);
+                });
+            }
+        }
+
+        function getTerritoryDeckComposition() {
+            let totalCards = 0;
+            let attrCounts = {}; // attribute -> count in deck
+            Object.entries(state.territoryDeck).forEach(([id, count]) => {
+                totalCards += count;
+                const card = state.cardMap.get(id);
+                if (card && card.conditions) {
+                    for (let char of card.conditions) {
+                        attrCounts[char] = (attrCounts[char] || 0) + count;
+                    }
+                }
+            });
+            if (totalCards === 0) totalCards = 10;
+            return { totalCards, attrCounts };
+        }
+
+        function updateTerritoryProbabilities() {
+            territoryProbTableBody.innerHTML = '';
+            const { totalCards, attrCounts } = getTerritoryDeckComposition();
+
+            if (territoryParams.mode === 'single') {
+                const selectedAttr = targetAttributeSelect.value || '平';
+                const K = attrCounts[selectedAttr] || 0;
+                const N = totalCards;
+                const Y = territoryYCount;
+
+                territoryTableTitle.textContent = `📈 ターン別・領土属性「${selectedAttr}」到達確率 (${Y}枚以上)`;
+                territoryTableHead.innerHTML = `
+                    <th class="py-2 pl-2 w-1/4">ターン (T) / めくれた枚数</th>
+                    <th class="py-2 w-1/2">確率の視覚化グラフ</th>
+                    <th class="py-2 pr-2 text-right w-1/4">到達確率</th>
+                `;
+
+                for (let T = 1; T <= 10; T++) {
+                    // Tターン目までにめくられている領土枚数 = T枚
+                    let prob = 0;
+                    for (let k = Y; k <= Math.min(K, T); k++) {
+                        prob += multivariateHypergeometricExact(N, K, 0, T, k, 0);
+                    }
+                    const percent = (prob * 100).toFixed(1);
+
+                    const row = document.createElement('tr');
+                    row.className = 'border-b border-slate-900 hover:bg-slate-900/30 transition-colors';
+                    row.innerHTML = `
+                        <td class="py-2.5 pl-2 font-mono font-bold text-blue-300">
+                            ${T} ターン目<span class="text-[10px] text-slate-500 font-normal font-sans"> (${T}枚中)</span>
+                        </td>
+                        <td class="py-2.5">
+                            <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800/50">
+                                <div class="bg-blue-500 h-full rounded-full transition-all duration-300" style="width: ${percent}%"></div>
+                            </div>
+                        </td>
+                        <td class="py-2.5 pr-2 text-right font-mono font-extrabold text-blue-400">
+                            ${percent}%
+                        </td>
+                    `;
+                    territoryProbTableBody.appendChild(row);
+                }
+
+            } else {
+                // 複合モード (例: 存在する主要属性ペアのT3, T5, T10時点での同時達成確率)
+                territoryTableTitle.textContent = `📈 主要属性コンボのターン別同時達成確率 (各1枚以上)`;
+                territoryTableHead.innerHTML = `
+                    <th class="py-2 pl-2 w-1/3">属性コンボ / ターン</th>
+                    <th class="py-2 w-5/12">確率の視覚化グラフ</th>
+                    <th class="py-2 pr-2 text-right w-1/4">同時確率</th>
+                `;
+
+                const attrs = Object.keys(attrCounts);
+                if (attrs.length < 2) {
+                    territoryProbTableBody.innerHTML = `<tr><td colspan="3" class="text-center py-6 text-slate-500 text-xs">領土デッキに2種類以上の属性が含まれていません。</td></tr>`;
+                    return;
+                }
+
+                // 代表的なペアの組み合わせを生成
+                let pairs = [];
+                for (let i = 0; i < attrs.length; i++) {
+                    for (let j = i + 1; j < attrs.length; j++) {
+                        pairs.push([attrs[i], attrs[j]]);
+                    }
+                }
+
+                pairs.forEach(([attr1, attr2]) => {
+                    const K1 = attrCounts[attr1] || 0;
+                    const K2 = attrCounts[attr2] || 0;
+                    const N = totalCards;
+
+                    [3, 5, 10].forEach(T => {
+                        // T枚めくったときに attr1 >= 1 かつ attr2 >= 1 となる確率のモンテカルロ的算出または全探索
+                        let success = 0;
+                        let trials = 10000;
+                        for (let t = 0; t < trials; t++) {
+                            // 領土デッキからT枚抽出
+                            let subDeck = [...Array(N).keys()];
+                            // シャッフル
+                            for (let i = subDeck.length - 1; i > 0; i--) {
+                                const r = Math.floor(Math.random() * (i + 1));
+                                [subDeck[i], subDeck[r]] = [subDeck[r], subDeck[i]];
+                            }
+                            let drawn = subDeck.slice(0, T);
+                            let c1 = 0, c2 = 0;
+                            drawn.forEach(idx => {
+                                // どのカードか特定
+                                let curCount = 0;
+                                let foundCard = null;
+                                for (let [id, count] of Object.entries(state.territoryDeck)) {
+                                    if (idx >= curCount && idx < curCount + count) {
+                                        foundCard = state.cardMap.get(id);
+                                        break;
+                                    }
+                                    curCount += count;
+                                }
+                                if (foundCard && foundCard.conditions) {
+                                    if (foundCard.conditions.includes(attr1)) c1++;
+                                    if (foundCard.conditions.includes(attr2)) c2++;
+                                }
+                            });
+                            if (c1 >= 1 && c2 >= 1) success++;
+                        }
+
+                        let prob = success / trials;
+                        let percent = (prob * 100).toFixed(1);
+
+                        const row = document.createElement('tr');
+                        row.className = 'border-b border-slate-900 hover:bg-slate-900/30 transition-colors';
+                        row.innerHTML = `
+                            <td class="py-2.5 pl-2 font-mono font-bold text-purple-300">
+                                ${attr1}1 ＋ ${attr2}1 <span class="text-[10px] text-slate-400 font-sans">(${T}T目)</span>
+                            </td>
+                            <td class="py-2.5">
+                                <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800/50">
+                                    <div class="bg-purple-500 h-full rounded-full transition-all duration-300" style="width: ${percent}%"></div>
+                                </div>
+                            </td>
+                            <td class="py-2.5 pr-2 text-right font-mono font-extrabold text-purple-400">
+                                ${percent}%
+                            </td>
+                        `;
+                        territoryProbTableBody.appendChild(row);
+                    });
+                });
+            }
+        }
+
         showDetailedCheck.addEventListener('change', () => {
             renderMainDeck();
             renderTerritoryDeck();
@@ -560,7 +883,9 @@
             });
             quickKInput.value = 0;
             quickKNotInput.value = 0;
-            quickCardNameLabel.textContent = "自由入力モード";
+            quickParams.Y = 0;
+            quickYValue.textContent = "0 枚";
+            quickCardNameLabel.textContent = "自由入力モード (必須0枚)";
             recalculateQuickProbabilities();
             renderMainDeck();
             updateStatusText();
@@ -771,7 +1096,10 @@
 
                 renderMainDeck();
                 renderTerritoryDeck();
+                populateTerritoryAttributes();
+                updateTerritoryProbabilities();
                 simulatorControlSection.classList.remove('hidden');
+                territoryCheckSection.classList.remove('hidden');
                 updateStatusText();
             } catch (err) {
                 console.error("インポート展開エラー:", err);
@@ -788,7 +1116,7 @@
             if (mustAndCards.length > 0) text += `🟢 必須(AND): ${mustAndCards.join(', ')} `;
             if (mustOrCards.length > 0) text += `${text ? ' | ' : ''}🔵 必須(OR): ${mustOrCards.join(', ')} `;
             if (notCards.length > 0) text += `${text ? ' | ' : ''}🔴 不純物: ${notCards.join(', ')} `;
-            if (!text) text = "カードをクリックすると、確率計算機に自動連動します！";
+            if (!text) text = "必須0枚モード：不純物（赤）の初手回避率計算が可能です。";
             simStatusText.textContent = text;
         }
 
@@ -912,7 +1240,10 @@
                             quickYValue.textContent = `${quickParams.Y} 枚`;
                         }
                     } else {
-                        quickCardNameLabel.textContent = `自由入力モード`;
+                        quickKInput.value = 0;
+                        quickParams.Y = 0;
+                        quickYValue.textContent = `0 枚`;
+                        quickCardNameLabel.textContent = `自由入力モード (必須0枚)`;
                     }
 
                     quickKNotInput.value = notCount;
@@ -1059,16 +1390,11 @@
             return needed;
         }
 
-        // --- 🎲 モンテカルロシミュレーター（修正版） ---
+        // --- 🎲 モンテカルロシミュレーター（必須0枚対応版） ---
         runSimulationBtn.addEventListener('click', () => {
             const runs = parseInt(simRunsSelect.value, 10);
             const mustAndIds = Object.entries(state.conditions).filter(([_, type]) => type === 'must_and').map(([id]) => id);
             const mustOrIds = Object.entries(state.conditions).filter(([_, type]) => type === 'must_or').map(([id]) => id);
-
-            if (mustAndIds.length === 0 && mustOrIds.length === 0) {
-                alert("プレイを検証したい『必須(AND)』または『必須(OR)』のカードを少なくとも1枚選択してください。");
-                return;
-            }
 
             // メインデッキ配列の構築
             let mainDeckArray = [];
@@ -1089,13 +1415,13 @@
                 territoryDeckArray.push({ id: 'DUMMY-L', name: 'ダミー領土', conditions: '無', scry: false });
             }
 
-            // 初手マリガンで「ボトムへ送る優先順位」（優先度が高いものを戻す）
+            // 初手マリガンで「ボトムへ送る優先順位」
             function getDiscardPriority(cardId) {
                 const cond = state.conditions[cardId] || 'none';
                 if (cond === 'not') return 4;       // 🔴 不純物（最優先で戻す）
                 if (cond === 'none') return 3;      // ⚪ 条件なし通常カード
-                if (cond === 'must_or') return 2;   // 🔵 必須OR
-                if (cond === 'must_and') return 1;  // 🟢 必須AND（最もキープしたい）
+                if (cond === 'must_or') return 2;   // 必須OR
+                if (cond === 'must_and') return 1;  // 必須AND
                 return 3;
             }
 
@@ -1107,43 +1433,35 @@
                 let successCounts = Array(10).fill(0);
 
                 for (let run = 0; run < runs; run++) {
-                    // 山札をシャッフル
                     const shuffledMain = shuffle([...mainDeckArray]);
                     
-                    // ① 初期手札7枚を引く
                     let hand = shuffledMain.slice(0, 7);
-                    let drawPile = shuffledMain.slice(7); // 山札 (残り33枚)
+                    let drawPile = shuffledMain.slice(7);
 
-                    // ② 1ターン目が始まる前に「不純物優先」で手札から2枚をボトムへ送る
+                    // マリガンボトム処理（不純物優先）
                     hand.sort((a, b) => {
                         const pDiff = getDiscardPriority(b) - getDiscardPriority(a);
                         if (pDiff !== 0) return pDiff;
-                        return Math.random() - 0.5; // 同優先度同士はランダム
+                        return Math.random() - 0.5;
                     });
 
-                    // 優先度の高い2枚（不純物等）を取り出し、山札の底（末尾）へ送る
                     const returnedCards = hand.splice(0, 2);
-                    drawPile.push(...returnedCards); // 手札は5枚になる
+                    drawPile.push(...returnedCards);
 
-                    // 領土デッキの準備
                     const shuffledTerritory = shuffle([...territoryDeckArray]);
                     let activeTerritories = [];
 
-                    // ③ 1〜10ターンの進行
                     for (let T = 1; T <= 10; T++) {
-                        // 【毎ターン1ドロー】山札の上から1枚を手札に加える
                         if (drawPile.length > 0) {
                             hand.push(drawPile.shift());
                         }
 
-                        // 毎ターン領土を1枚設置
                         let currentLand = shuffledTerritory[T - 1];
                         activeTerritories.push({
                             ...currentLand,
                             turnPlayed: T
                         });
 
-                        // 占術領土の処理（次ターンの領土が不要ならボトムへ送る）
                         if (currentLand.scry && T < shuffledTerritory.length) {
                             let nextLandIndex = T; 
                             let nextLand = shuffledTerritory[nextLandIndex];
@@ -1158,15 +1476,11 @@
                             }
                         }
 
-                        // 🎯 プレイ可能判定
-                        // 1. 必須(AND)カードがすべて手札に揃っているか
-                        const hasAllMustAnd = mustAndIds.every(id => hand.includes(id));
-                        
-                        // 2. 必須(OR)カードが指定されていれば、1枚以上手札に揃っているか
+                        // 必須0枚の場合は「常に条件達成（純粋な事故回避・ドロー検証用）」扱いとする
+                        const hasAllMustAnd = mustAndIds.length === 0 || mustAndIds.every(id => hand.includes(id));
                         const hasAnyMustOr = mustOrIds.length === 0 || mustOrIds.some(id => hand.includes(id));
 
                         if (hasAllMustAnd && hasAnyMustOr) {
-                            // コストと色属性の必要条件が満たせるかチェック
                             let allPlayable = mustAndCardObjects.every(card => {
                                 let reqColors = card.conditions ? card.conditions.split('') : [];
                                 let availColors = activeTerritories.map(land => land.conditions ? land.conditions.split('') : []);
@@ -1184,7 +1498,6 @@
                             });
 
                             if (allPlayable) {
-                                // 達成したターン以降（T〜10T）を全て「成功」としてカウント
                                 for (let s = T - 1; s < 10; s++) {
                                     successCounts[s]++;
                                 }
