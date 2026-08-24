@@ -734,9 +734,7 @@
                 deckJsonInput.value = JSON.stringify(parsed, null, 2);
                 executeImport(parsed);
             } catch (err) {
-                alert('JSONテキストの解析に失敗しました。カッコやカンマの不整合がないか確認してください。
-
-詳細: ' + err.message);
+                alert('JSONテキストの解析に失敗しました。カッコやカンマの不整合がないか確認してください。\n詳細: ' + err.message);
             }
         });
 
@@ -779,9 +777,7 @@
                 updateStatusText();
             } catch (err) {
                 console.error("インポート展開エラー:", err);
-                alert("デッキの展開中にエラーが発生しました。
-
-詳細: " + err.message);
+                alert("デッキの展開中にエラーが発生しました。\n\n詳細: " + err.message);
             }
         }
 
