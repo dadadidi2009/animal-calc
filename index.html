@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アニマルカードゲーム Web確率計算機 ver 0.2608200557</title>
+    <title>アニマルカードゲーム Web確率計算機 ver 0.2608240653</title>
     <!-- Tailwind CSS & Chart.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -25,7 +25,7 @@
             <h1 class="text-xl font-bold text-emerald-400 flex items-center gap-2">
                 🐾 アニマルカードゲーム Web確率計算機
                 <span class="text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono">
-                    ver 0.2608200557
+                    ver 0.2608240653
                 </span>
             </h1>
             <span class="text-xs bg-slate-800 text-slate-400 px-3 py-1 rounded-full border border-slate-700 font-mono">
@@ -93,7 +93,98 @@
             </div>
         </section>
 
-        <!-- 🟢 【②のご提案】バグ切り分け専用：純粋なファイルテキスト読み込みチェッカー（完全独立型） -->
+        <!-- 📊 【新規特化機能】超幾何分布・ドロー確率特化計算機 (X枚目までにY枚引く確率) -->
+        <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <h2 class="text-base font-bold text-emerald-400 flex items-center gap-2">
+                    📊 超幾何分布・ドロー確率特化計算機 (X枚目までにY枚引く確率)
+                </h2>
+                <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 font-bold font-mono">
+                    Hypergeometric Formula Engine (nCr)
+                </span>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+                モンテカルロ法ではなく数学的公式（超幾何分布）を用いて、指定枚数引いた時の確率を瞬時に一覧表示します。<br>
+                下のメインデッキから任意のカードをクリックすると、そのカードの投入枚数(K)と現在のデッキ総数(N)が自動でここにセットされます。
+            </p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+                <!-- パラメータ調整エリア -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-4">
+                    <p class="text-xs font-bold text-slate-300 border-b border-slate-800/60 pb-1.5 flex justify-between">
+                        <span>⚙️ 計算パラメータ</span>
+                        <span id="quickCardNameLabel" class="text-emerald-400 truncate max-w-[150px] font-sans">自由入力モード</span>
+                    </p>
+                    
+                    <!-- デッキ枚数 N -->
+                    <div class="space-y-1.5">
+                        <label class="block text-[11px] font-bold text-slate-400">デッキ全体の枚数 (N)</label>
+                        <div class="flex items-center gap-1">
+                            <button id="btnDecN" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-bold text-xs transition-colors">-</button>
+                            <input type="number" id="quickNInput" value="40" min="1" max="100" class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-center text-emerald-400 font-mono focus:outline-none">
+                            <button id="btnIncN" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-bold text-xs transition-colors">+</button>
+                        </div>
+                    </div>
+
+                    <!-- 投入枚数 K -->
+                    <div class="space-y-1.5">
+                        <label class="block text-[11px] font-bold text-slate-400">カードの投入枚数 (K)</label>
+                        <div class="flex items-center gap-1">
+                            <button id="btnDecK" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-bold text-xs transition-colors">-</button>
+                            <input type="number" id="quickKInput" value="3" min="1" max="100" class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-center text-emerald-400 font-mono focus:outline-none">
+                            <button id="btnIncK" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-bold text-xs transition-colors">+</button>
+                        </div>
+                    </div>
+
+                    <!-- 目標枚数 Y -->
+                    <div class="space-y-1.5">
+                        <label class="block text-[11px] font-bold text-slate-400">手札に引きたい目標枚数 (Y)</label>
+                        <div class="flex items-center gap-1">
+                            <button id="btnDecY" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-bold text-xs transition-colors">-</button>
+                            <span id="quickYValue" class="w-full bg-slate-900 border border-slate-800 rounded py-1 text-xs text-center text-amber-400 font-mono font-bold">1 枚</span>
+                            <button id="btnIncY" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-bold text-xs transition-colors">+</button>
+                        </div>
+                    </div>
+
+                    <!-- 条件タイプ (ぴったり / 以上) -->
+                    <div class="space-y-1.5 pt-1">
+                        <label class="block text-[11px] font-bold text-slate-400">確率判定の条件</label>
+                        <div class="grid grid-cols-2 gap-1 p-0.5 bg-slate-900 rounded border border-slate-800">
+                            <button id="typeAtLeast" class="py-1 text-[10px] font-bold rounded transition-all bg-emerald-600 text-white">
+                                Y 枚以上
+                            </button>
+                            <button id="typeExact" class="py-1 text-[10px] font-bold rounded transition-all text-slate-400 hover:text-slate-200">
+                                ぴったり Y 枚
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 確率一覧テーブル -->
+                <div class="lg:col-span-3 bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+                    <p class="text-xs font-bold text-slate-300 border-b border-slate-800 pb-1.5 mb-3 flex justify-between">
+                        <span>📈 ドロー枚数(X)ごとの確率一覧</span>
+                        <span class="text-[10px] text-slate-500">※アニマルカードゲーム換算を自動併記</span>
+                    </p>
+                    <div class="max-h-[310px] overflow-y-auto pr-1">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="border-b border-slate-800/60 text-slate-500 font-bold text-[10px] uppercase tracking-wider">
+                                    <th class="py-2 pl-2 w-1/4">引く枚数 (X)</th>
+                                    <th class="py-2 w-1/2">確率の視覚化グラフ</th>
+                                    <th class="py-2 pr-2 text-right w-1/4">確率</th>
+                                </tr>
+                            </thead>
+                            <tbody id="quickProbTableBody">
+                                <!-- JSで動的に確率行をレンダリング -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 🔍 【バグ切り分け専用】純粋ファイルテキスト読み込みチェッカー -->
         <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
             <h2 class="text-base font-bold text-sky-400 flex items-center gap-2">
                 🔍 【バグ切り分け専用】純粋ファイルテキスト読み込みチェッカー
@@ -170,7 +261,7 @@
                     <h2 class="text-base font-bold text-emerald-300">
                         🃏 メインデッキ <span id="mainDeckCount" class="text-sm font-normal text-slate-400">(0枚)</span>
                     </h2>
-                    <span class="text-[10px] text-slate-400">💡 カードクリック: [通常] ➔ [必須(緑)] ➔ [不純物(赤)]</span>
+                    <span class="text-[10px] text-slate-400">💡 カードクリック: 確率特化計算機に投入枚数をセット！</span>
                 </div>
                 <div id="mainDeckGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     <p class="col-span-full text-center text-slate-500 py-12 text-sm font-bold">デッキJSONファイルをインポートしてください。</p>
@@ -223,6 +314,166 @@
         const bannerEmoji = document.getElementById('bannerEmoji');
         const showDetailedCheck = document.getElementById('showDetailedCheck');
 
+        // --- 📊 クイック確率計算機のロジック ---
+        let quickParams = {
+            N: 40,
+            K: 3,
+            Y: 1,
+            type: 'at_least'
+        };
+
+        const quickNInput = document.getElementById('quickNInput');
+        const quickKInput = document.getElementById('quickKInput');
+        const quickYValue = document.getElementById('quickYValue');
+        const quickCardNameLabel = document.getElementById('quickCardNameLabel');
+        const typeAtLeast = document.getElementById('typeAtLeast');
+        const typeExact = document.getElementById('typeExact');
+        const quickProbTableBody = document.getElementById('quickProbTableBody');
+
+        // 組み合わせ nCr (高精度整数演算)
+        function jsComb(n, k) {
+            if (k < 0 || k > n) return 0;
+            if (k === 0 || k === n) return 1;
+            if (k > n / 2) k = n - k;
+            let res = 1;
+            for (let i = 1; i <= k; i++) {
+                res = res * (n - i + 1) / i;
+            }
+            return res;
+        }
+
+        // 超幾何分布でちょうどk枚引く確率
+        function hypergeometricExact(N, K, X, k) {
+            if (k < 0 || k > K || k > X || (X - k) > (N - K)) return 0;
+            const numerator = jsComb(K, k) * jsComb(N - K, X - k);
+            const denominator = jsComb(N, X);
+            if (denominator === 0) return 0;
+            return numerator / denominator;
+        }
+
+        // 超幾何確率の総合計算
+        function calculateHypergeometric(N, K, X, Y, type) {
+            if (type === 'exact') {
+                return hypergeometricExact(N, K, X, Y);
+            } else {
+                let sum = 0;
+                for (let k = Y; k <= Math.min(K, X); k++) {
+                    sum += hypergeometricExact(N, K, X, k);
+                }
+                return sum;
+            }
+        }
+
+        // 再計算とテーブル更新
+        function recalculateQuickProbabilities() {
+            const N = Math.max(1, parseInt(quickNInput.value, 10) || 40);
+            const K = Math.max(0, parseInt(quickKInput.value, 10) || 0);
+            const Y = quickParams.Y;
+            const type = quickParams.type;
+
+            quickParams.N = N;
+            quickParams.K = K;
+
+            quickProbTableBody.innerHTML = '';
+
+            // X = 1 から 20枚目までの一覧を表示
+            for (let X = 1; X <= 20; X++) {
+                const prob = calculateHypergeometric(N, K, X, Y, type);
+                const percent = (prob * 100).toFixed(1);
+
+                // アニマルカードゲームのメインデッキ換算ルール（初手7枚）の補足ラベル作成
+                let comment = '';
+                if (X === 7) comment = ' (初期手札)';
+                else if (X > 7) comment = ` (${X - 6}T目ドロー)`;
+
+                const row = document.createElement('tr');
+                row.className = 'border-b border-slate-900 hover:bg-slate-900/30 transition-colors';
+                
+                row.innerHTML = `
+                    <td class="py-2.5 pl-2 font-mono font-bold text-slate-300">
+                        ${X}枚目<span class="text-[10px] text-slate-500 font-normal font-sans">${comment}</span>
+                    </td>
+                    <td class="py-2.5">
+                        <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800/50">
+                            <div class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width: ${percent}%"></div>
+                        </div>
+                    </td>
+                    <td class="py-2.5 pr-2 text-right font-mono font-extrabold text-emerald-400">
+                        ${percent}%
+                    </td>
+                `;
+                quickProbTableBody.appendChild(row);
+            }
+        }
+
+        // 調整ボタン・インプットリスナーの設定
+        quickNInput.addEventListener('input', () => {
+            recalculateQuickProbabilities();
+        });
+        quickKInput.addEventListener('input', () => {
+            // YがKを超えないように調整
+            const K = parseInt(quickKInput.value, 10) || 0;
+            if (quickParams.Y > K) {
+                quickParams.Y = Math.max(1, K);
+                quickYValue.textContent = `${quickParams.Y} 枚`;
+            }
+            recalculateQuickProbabilities();
+        });
+
+        document.getElementById('btnDecN').addEventListener('click', () => {
+            const val = Math.max(1, (parseInt(quickNInput.value, 10) || 40) - 1);
+            quickNInput.value = val;
+            recalculateQuickProbabilities();
+        });
+        document.getElementById('btnIncN').addEventListener('click', () => {
+            const val = (parseInt(quickNInput.value, 10) || 40) + 1;
+            quickNInput.value = val;
+            recalculateQuickProbabilities();
+        });
+
+        document.getElementById('btnDecK').addEventListener('click', () => {
+            const val = Math.max(0, (parseInt(quickKInput.value, 10) || 0) - 1);
+            quickKInput.value = val;
+            // YがKを超えないように調整
+            if (quickParams.Y > val) {
+                quickParams.Y = Math.max(1, val);
+                quickYValue.textContent = `${quickParams.Y} 枚`;
+            }
+            recalculateQuickProbabilities();
+        });
+        document.getElementById('btnIncK').addEventListener('click', () => {
+            const val = (parseInt(quickKInput.value, 10) || 0) + 1;
+            quickKInput.value = val;
+            recalculateQuickProbabilities();
+        });
+
+        document.getElementById('btnDecY').addEventListener('click', () => {
+            quickParams.Y = Math.max(1, quickParams.Y - 1);
+            quickYValue.textContent = `${quickParams.Y} 枚`;
+            recalculateQuickProbabilities();
+        });
+        document.getElementById('btnIncY').addEventListener('click', () => {
+            const K = parseInt(quickKInput.value, 10) || 0;
+            quickParams.Y = Math.min(K, quickParams.Y + 1);
+            quickYValue.textContent = `${quickParams.Y} 枚`;
+            recalculateQuickProbabilities();
+        });
+
+        typeAtLeast.addEventListener('click', () => {
+            quickParams.type = 'at_least';
+            typeAtLeast.className = 'py-1 text-[10px] font-bold rounded transition-all bg-emerald-600 text-white';
+            typeExact.className = 'py-1 text-[10px] font-bold rounded transition-all text-slate-400 hover:text-slate-200';
+            recalculateQuickProbabilities();
+        });
+
+        typeExact.addEventListener('click', () => {
+            quickParams.type = 'exact';
+            typeExact.className = 'py-1 text-[10px] font-bold rounded transition-all bg-emerald-600 text-white';
+            typeAtLeast.className = 'py-1 text-[10px] font-bold rounded transition-all text-slate-400 hover:text-slate-200';
+            recalculateQuickProbabilities();
+        });
+
+
         // トグル切り替え時に再描画を走らせる
         showDetailedCheck.addEventListener('change', () => {
             if (Object.keys(state.mainDeck).length > 0) {
@@ -263,7 +514,7 @@
                 return normalizeCardListId(rawId);
             }
 
-            // 🟢 【①の修正】BP1-038がBP1-039 (ID 5039) として誤登録されている問題の自動補正
+            // 🟢 BP1-038がBP1-039 (ID 5039) として誤登録されている問題の自動補正
             if (num === 5039) {
                 console.log("🛠️ ワークアラウンド適用: デッキID 5039 (BP1-039) を BP1-038 に自動補正しました。");
                 return "BP1-38";
@@ -364,7 +615,7 @@
             if (state.cardMap.size > 0) {
                 bannerEmoji.textContent = '✅';
                 bannerEmoji.classList.remove('animate-pulse');
-                bannerText.textContent = `データベース構築完了！全 ${state.cardMap.size} 枚의 カードが紐付け可能です。`;
+                bannerText.textContent = `データベース構築完了！全 ${state.cardMap.size} 枚のカードが紐付け可能です。`;
                 bannerText.className = 'font-bold text-emerald-400 text-sm';
             } else {
                 bannerEmoji.textContent = '🚨';
@@ -379,7 +630,10 @@
             }
         }
 
-        window.addEventListener('DOMContentLoaded', loadAllCardLists);
+        window.addEventListener('DOMContentLoaded', () => {
+            loadAllCardLists();
+            recalculateQuickProbabilities(); // クイック確率計算機初期マウント
+        });
 
         // --- 壊れた不完全なJSONを自動で修復して読み込む救済パースロジック ---
         function robustJsonParse(text) {
@@ -447,7 +701,7 @@
             reader.readAsText(selectedFile); 
         });
 
-        // 🟢 【②の追加】バグ切り分け専用：純粋テキスト読み込みチェッカーの動作
+        // 🟢 バグ切り分け専用：純粋テキスト読み込みチェッカーの動作
         const debugFileInput = document.getElementById('debugFileInput');
         const debugLoadBtn = document.getElementById('debugLoadBtn');
         const debugTextOutput = document.getElementById('debugTextOutput');
@@ -490,12 +744,15 @@
                 state.territoryDeck = {};
                 state.conditions = {};
 
+                let mainTotal = 0;
+
                 // 1. メインデッキのインポート（標準化キーにデコード）
                 if (deckData.mainDeck) {
                     Object.entries(deckData.mainDeck).forEach(([rawId, count]) => {
                         const normId = normalizeDeckId(rawId);
                         state.mainDeck[normId] = count;
                         state.conditions[normId] = 'none';
+                        mainTotal += count;
                     });
                 }
 
@@ -505,6 +762,12 @@
                         const normId = normalizeDeckId(rawId);
                         state.territoryDeck[normId] = count;
                     });
+                }
+
+                // 特化計算機のデフォルトデッキ枚数 N をインポートしたデッキ数に自動同期
+                if (mainTotal > 0) {
+                    quickNInput.value = mainTotal;
+                    recalculateQuickProbabilities();
                 }
 
                 renderMainDeck();
@@ -524,7 +787,7 @@
             let text = "";
             if (mustCards.length > 0) text += `🟢 必須: ${mustCards.join(', ')} `;
             if (notCards.length > 0) text += `${text ? ' | ' : ''}🔴 不純物: ${notCards.join(', ')} `;
-            if (!text) text = "カードをクリックして条件を指定してください。";
+            if (!text) text = "カードをクリックすると、上の特化確率テーブルに投入枚数が自動セットされます！";
             simStatusText.textContent = text;
         }
 
@@ -606,7 +869,7 @@
                     cardNode.innerHTML = badgeHtml + `
                         <div class="flex justify-between items-start">
                             <span class="text-[10px] text-rose-500 font-mono">${displayId}</span>
-                            <span class="bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 rounded-full text-rose-400 font-bold text-[9px]">${count}枚</span>
+                            <span class="bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full text-rose-400 font-bold text-[9px]">${count}枚</span>
                         </div>
                         <div class="mt-2">
                             <h3 class="text-xs font-bold text-rose-400 truncate">未登録のカード</h3>
@@ -614,10 +877,29 @@
                     `;
                 }
 
+                // 🟢 追加：メインデッキカードをクリックした際、上の特化計算機に投入枚数を自動で送り再計算する
                 cardNode.addEventListener('click', () => {
+                    // 1. 特化計算機への連動
+                    quickKInput.value = count;
+                    
+                    let mainTotal = 0;
+                    Object.values(state.mainDeck).forEach(c => mainTotal += c);
+                    quickNInput.value = mainTotal || 40;
+                    quickCardNameLabel.textContent = `選択中: ${card ? card.name : displayId}`;
+
+                    // YがKを超えないように調整
+                    if (quickParams.Y > count) {
+                        quickParams.Y = Math.max(1, count);
+                        quickYValue.textContent = `${quickParams.Y} 枚`;
+                    }
+
+                    recalculateQuickProbabilities();
+
+                    // 2. モンテカルロシミュレーター側の条件切り替え
                     if (cond === 'none') state.conditions[cardId] = 'must';
                     else if (cond === 'must') state.conditions[cardId] = 'not';
                     else state.conditions[cardId] = 'none';
+
                     renderMainDeck();
                     updateStatusText();
                 });
@@ -640,7 +922,7 @@
                 const displayId = cleanDisplayId(card, cardId);
 
                 if (card) {
-                    // 🟢 領土の種別に応じたビジュアルバッジの自動作成
+                    // 領土の種別に応じたビジュアルバッジの自動作成
                     let typeBadge = '';
                     let borderHighlight = 'hover:border-blue-500';
                     
@@ -660,7 +942,6 @@
                     }
 
                     if (isDetailed) {
-                        // 👁️ 詳細表示モード：種族、バッジ、供給可能属性をはっきりと埋め込み表示
                         cardNode.className = `relative group bg-slate-950 border border-slate-800 rounded-xl p-4 ${borderHighlight} hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[145px]`;
                         cardNode.innerHTML = `
                             <div class="flex justify-between items-start">
@@ -677,7 +958,6 @@
                             </div>
                         `;
                     } else {
-                        // 👁️ 名前のみ・簡易モード
                         cardNode.className = `relative group bg-slate-950 border border-slate-800 rounded-xl p-3 ${borderHighlight} hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[80px]`;
                         cardNode.innerHTML = `
                             <div class="flex justify-between items-start">
@@ -690,7 +970,6 @@
                         `;
                     }
                 } else {
-                    // 未登録領土の代替表示
                     cardNode.className = 'relative bg-slate-950 border border-rose-950 rounded-xl p-3 flex flex-col justify-between min-h-[80px]';
                     cardNode.innerHTML = `
                         <div class="flex justify-between items-start">
@@ -706,7 +985,6 @@
             });
             territoryDeckCountEl.textContent = `(${totalCount}枚)`;
         }
-
 
         function shuffle(array) {
             for (let i = array.length - 1; i > 0; i--) {
