@@ -665,7 +665,7 @@
             }
         }
 
-        // 🟢 【完全修正】単一の File オブジェクト (files[0]) を正確に取得・処理するハンドラ
+// 🟢 【完全修正】単一の File オブジェクト (files[0]) を正確に取得・処理するハンドラ
         let selectedFile = null;
 
         deckFileInput.addEventListener('change', (e) => {
@@ -695,8 +695,7 @@
             const reader = new FileReader();
             reader.onload = function(evt) {
                 deckJsonInput.value = evt.target.result;
-                alert("ファイルのテキスト読み込みに成功しました！
-右側のテキスト貼り付け欄に中身が表示されています。");
+                alert("ファイルのテキスト読み込みに成功しました！\n右側のテキスト貼り付け欄に中身が表示されています。");
             };
             reader.onerror = function() {
                 alert("ファイルの読み取りに失敗しました。");
