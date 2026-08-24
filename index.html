@@ -59,7 +59,7 @@
                 <h2 class="text-base font-bold text-emerald-300 flex items-center gap-2">
                     📥 デッキJSONの読み込み
                 </h2>
-                <!-- 詳細表示切り替えチェックボックス -->
+                <!-- ③ 詳細表示切り替えチェックボックス -->
                 <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
                     <input type="checkbox" id="showDetailedCheck" class="w-4 h-4 rounded text-emerald-500 bg-slate-900 border-slate-800 focus:ring-emerald-500 focus:ring-offset-slate-950 cursor-pointer">
                     <label for="showDetailedCheck" class="text-xs font-bold text-slate-300 cursor-pointer select-none">
@@ -100,12 +100,12 @@
                     📊 超幾何分布・ドロー確率特化計算機 (X枚目までにY枚引く確率)
                 </h2>
                 <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 font-bold font-mono">
-                    Hypergeometric Formula Engine (nCr)
+                    Hypergeometric Formula Engine (Multivariate nCr)
                 </span>
             </div>
             <p class="text-xs text-slate-400 leading-relaxed">
-                モンテカルロ法ではなく数学的公式（超幾何分布）を用いて、指定枚数引いた時の確率を瞬時に一覧表示します。<br>
-                下のメインデッキから任意のカードをクリックし、<span class="text-indigo-400 font-bold">青色の「必須(OR)」</span>に指定すると、その合計投入枚数(K)が自動でここにセットされます。
+                数学的公式（多変量超幾何分布）を用いて、目標カードを引く確率と不純物を規定枚数未満に抑える確率を即時に計算します。<br>
+                メインデッキのカードをクリックし、<span class="text-indigo-400 font-bold">青色の「必須(OR)」</span>や<span class="text-rose-400 font-bold">赤色の「不純物」</span>に指定すると投入枚数が自動反映されます。
             </p>
 
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
@@ -128,17 +128,17 @@
 
                     <!-- 投入枚数 K -->
                     <div class="space-y-1.5">
-                        <label class="block text-[11px] font-bold text-slate-400">カードの投入枚数 (K)</label>
+                        <label class="block text-[11px] font-bold text-indigo-300">目標カードの投入枚数 (K)</label>
                         <div class="flex items-center gap-1">
                             <button id="btnDecK" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-bold text-xs transition-colors">-</button>
-                            <input type="number" id="quickKInput" value="3" min="1" max="100" class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-center text-emerald-400 font-mono focus:outline-none">
+                            <input type="number" id="quickKInput" value="3" min="0" max="100" class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-center text-emerald-400 font-mono focus:outline-none">
                             <button id="btnIncK" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-bold text-xs transition-colors">+</button>
                         </div>
                     </div>
 
                     <!-- 目標枚数 Y -->
                     <div class="space-y-1.5">
-                        <label class="block text-[11px] font-bold text-slate-400">手札に引きたい目標枚数 (Y)</label>
+                        <label class="block text-[11px] font-bold text-indigo-300">手札に引きたい目標枚数 (Y)</label>
                         <div class="flex items-center gap-1">
                             <button id="btnDecY" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-bold text-xs transition-colors">-</button>
                             <span id="quickYValue" class="w-full bg-slate-900 border border-slate-800 rounded py-1 text-xs text-center text-amber-400 font-mono font-bold">1 枚</span>
@@ -146,9 +146,30 @@
                         </div>
                     </div>
 
+                    <!-- ④ 不純物(OR) 投入枚数 K_not & 許容上限 Z -->
+                    <div class="space-y-2 pt-2 border-t border-slate-800/80">
+                        <div class="space-y-1.5">
+                            <label class="block text-[11px] font-bold text-rose-400">不純物(OR)の投入枚数 (K_not)</label>
+                            <div class="flex items-center gap-1">
+                                <button id="btnDecKNot" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-bold text-xs transition-colors">-</button>
+                                <input type="number" id="quickKNotInput" value="0" min="0" max="100" class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-center text-rose-400 font-mono focus:outline-none">
+                                <button id="btnIncKNot" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-bold text-xs transition-colors">+</button>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="block text-[11px] font-bold text-rose-400">不純物の許容上限 (Z枚未満に抑える)</label>
+                            <div class="flex items-center gap-1">
+                                <button id="btnDecZ" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-bold text-xs transition-colors">-</button>
+                                <span id="quickZValue" class="w-full bg-slate-900 border border-slate-800 rounded py-1 text-xs text-center text-rose-400 font-mono font-bold">3 枚未満</span>
+                                <button id="btnIncZ" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-bold text-xs transition-colors">+</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 条件タイプ (ぴったり / 以上) -->
                     <div class="space-y-1.5 pt-1">
-                        <label class="block text-[11px] font-bold text-slate-400">確率判定の条件</label>
+                        <label class="block text-[11px] font-bold text-slate-400">目標判定の条件</label>
                         <div class="grid grid-cols-2 gap-1 p-0.5 bg-slate-900 rounded border border-slate-800">
                             <button id="typeAtLeast" class="py-1 text-[10px] font-bold rounded transition-all bg-emerald-600 text-white">
                                 Y 枚以上
@@ -159,8 +180,8 @@
                         </div>
                     </div>
 
-                    <!-- 【新規】目標確率からの逆算 -->
-                    <div class="space-y-1.5 pt-4 border-t border-slate-800/60 mt-3">
+                    <!-- 目標確率からの逆算 -->
+                    <div class="space-y-1.5 pt-3 border-t border-slate-800/60 mt-3">
                         <label class="block text-[11px] font-bold text-indigo-300">🔍 目標確率から最低投入枚数を逆算</label>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
@@ -182,15 +203,15 @@
                 <div class="lg:col-span-3 bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
                     <p class="text-xs font-bold text-slate-300 border-b border-slate-800 pb-1.5 mb-3 flex justify-between">
                         <span>📈 ドロー枚数(X)ごとの確率一覧</span>
-                        <span class="text-[10px] text-slate-500 font-bold">※現実的な7枚（初手）〜20枚ドローのみ表示中</span>
+                        <span class="text-[10px] text-slate-500 font-bold">※不純物がZ枚未満 ＆ 目標Y枚以上の同時成立確率</span>
                     </p>
-                    <div class="max-h-[360px] overflow-y-auto pr-1">
+                    <div class="max-h-[380px] overflow-y-auto pr-1">
                         <table class="w-full text-left border-collapse text-xs">
                             <thead>
                                 <tr class="border-b border-slate-800/60 text-slate-500 font-bold text-[10px] uppercase tracking-wider">
                                     <th class="py-2 pl-2 w-1/4">引く枚数 (X)</th>
                                     <th class="py-2 w-1/2">確率の視覚化グラフ</th>
-                                    <th class="py-2 pr-2 text-right w-1/4">確率</th>
+                                    <th class="py-2 pr-2 text-right w-1/4">成立確率</th>
                                 </tr>
                             </thead>
                             <tbody id="quickProbTableBody">
@@ -214,10 +235,10 @@
                     <div class="space-y-1.5 text-xs text-slate-300 leading-relaxed">
                         <p class="font-bold text-slate-400">⛰️ シミュレーション判定ルール:</p>
                         <ul class="list-disc list-inside space-y-1 text-slate-400">
-                            <li><strong>不純物(赤)</strong>: 最初の7枚に3枚以上あると、2枚戻しても手札に残るため事故(失敗)と判定。</li>
-                            <li><strong>ムーブイン</strong>: 3T以降に場に出た2色領土は、そのターンのみコスト供給不可。次のターンから1コストとして復活。</li>
-                            <li><strong>占術領土</strong>: めくれた際、次ターンの領土をPeekし、手札のパーツに不要なら山札の底へ。</li>
-                            <li><span class="text-emerald-400">必須(AND)</span>のみシミュレーションのプレイ目標として扱われます。</li>
+                            <li><strong>不純物(赤)</strong>: 最初の7枚に3枚以上あると事故(失敗)と判定。</li>
+                            <li><strong>ムーブイン</strong>: 3T以降に出た2色領土はそのターンのみコスト供給不可。</li>
+                            <li><strong>占術領土</strong>: めくれた際、次ターンの領土をPeekし不要なら山札の底へ。</li>
+                            <li><span class="text-emerald-400">必須(AND)</span>のみプレイ目標として扱われます。</li>
                         </ul>
                     </div>
                     <div>
@@ -254,7 +275,13 @@
                     <h2 class="text-base font-bold text-emerald-300">
                         🃏 メインデッキ <span id="mainDeckCount" class="text-sm font-normal text-slate-400">(0枚)</span>
                     </h2>
-                    <span class="text-[10px] text-slate-400">💡 カードクリックで判定条件を切替！</span>
+                    <div class="flex items-center gap-3">
+                        <!-- ② 条件リセットボタン -->
+                        <button id="resetConditionsBtn" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2.5 py-1 rounded border border-slate-700 transition-colors">
+                            🔄 条件リセット
+                        </button>
+                        <span class="text-[10px] text-slate-400">💡 カードクリックで判定条件を切替</span>
+                    </div>
                 </div>
                 <div id="mainDeckGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     <p class="col-span-full text-center text-slate-500 py-12 text-sm font-bold">デッキJSONファイルをインポートしてください。</p>
@@ -306,24 +333,29 @@
         const fileStatusGrid = document.getElementById('fileStatusGrid');
         const bannerEmoji = document.getElementById('bannerEmoji');
         const showDetailedCheck = document.getElementById('showDetailedCheck');
+        const resetConditionsBtn = document.getElementById('resetConditionsBtn');
 
         // --- 📊 クイック確率計算機のロジック ---
         let quickParams = {
             N: 40,
             K: 3,
             Y: 1,
+            K_not: 0,
+            Z: 3, // 初期値 3枚未満
             type: 'at_least'
         };
 
         const quickNInput = document.getElementById('quickNInput');
         const quickKInput = document.getElementById('quickKInput');
         const quickYValue = document.getElementById('quickYValue');
+        const quickKNotInput = document.getElementById('quickKNotInput');
+        const quickZValue = document.getElementById('quickZValue');
         const quickCardNameLabel = document.getElementById('quickCardNameLabel');
         const typeAtLeast = document.getElementById('typeAtLeast');
         const typeExact = document.getElementById('typeExact');
         const quickProbTableBody = document.getElementById('quickProbTableBody');
 
-        // 組み合わせ nCr (高精度整数演算)
+        // 組み合わせ nCr (高精度演算)
         function jsComb(n, k) {
             if (k < 0 || k > n) return 0;
             if (k === 0 || k === n) return 1;
@@ -335,42 +367,52 @@
             return res;
         }
 
-        // 超幾何分布でちょうどk枚引く確率
-        function hypergeometricExact(N, K, X, k) {
-            if (k < 0 || k > K || k > X || (X - k) > (N - K)) return 0;
-            const numerator = jsComb(K, k) * jsComb(N - K, X - k);
+        // 多変量超幾何分布 (目標k1枚, 不純物k2枚を引く確率)
+        function multivariateHypergeometricExact(N, K1, K2, X, k1, k2) {
+            const K_other = N - K1 - K2;
+            const k_other = X - k1 - k2;
+
+            if (k1 < 0 || k1 > K1 || k2 < 0 || k2 > K2 || k_other < 0 || k_other > K_other) {
+                return 0;
+            }
+
+            const numerator = jsComb(K1, k1) * jsComb(K2, k2) * jsComb(K_other, k_other);
             const denominator = jsComb(N, X);
             if (denominator === 0) return 0;
             return numerator / denominator;
         }
 
-        // 超幾何確率の総合計算
-        function calculateHypergeometric(N, K, X, Y, type) {
-            if (type === 'exact') {
-                return hypergeometricExact(N, K, X, Y);
-            } else {
-                let sum = 0;
-                for (let k = Y; k <= Math.min(K, X); k++) {
-                    sum += hypergeometricExact(N, K, X, k);
+        // ④ 超幾何確率の総合計算 (不純物がZ枚未満 ＆ 目標Y枚/Y枚以上)
+        function calculateMultivariateProbability(N, K1, K2, X, Y, Z, type) {
+            let totalProb = 0;
+            const k1_start = Y;
+            const k1_end = (type === 'exact') ? Y : Math.min(K1, X);
+
+            for (let k1 = k1_start; k1 <= k1_end; k1++) {
+                for (let k2 = 0; k2 < Z; k2++) { // Z枚未満 (0 ～ Z-1枚)
+                    totalProb += multivariateHypergeometricExact(N, K1, K2, X, k1, k2);
                 }
-                return sum;
             }
+            return totalProb;
         }
 
         // 再計算とテーブル更新
         function recalculateQuickProbabilities() {
             const N = Math.max(1, parseInt(quickNInput.value, 10) || 40);
             const K = Math.max(0, parseInt(quickKInput.value, 10) || 0);
+            const K_not = Math.max(0, parseInt(quickKNotInput.value, 10) || 0);
             const Y = quickParams.Y;
+            const Z = quickParams.Z;
             const type = quickParams.type;
 
             quickParams.N = N;
             quickParams.K = K;
+            quickParams.K_not = K_not;
 
             quickProbTableBody.innerHTML = '';
 
             for (let X = 7; X <= 20; X++) {
-                const prob = calculateHypergeometric(N, K, X, Y, type);
+                const prob = calculateMultivariateProbability(N, K, K_not, X, Y, Z, type);
                 const percent = (prob * 100).toFixed(1);
 
                 let comment = '';
@@ -398,9 +440,7 @@
         }
 
         // 調整ボタン・インプットリスナーの設定
-        quickNInput.addEventListener('input', () => {
-            recalculateQuickProbabilities();
-        });
+        quickNInput.addEventListener('input', recalculateQuickProbabilities);
         quickKInput.addEventListener('input', () => {
             const K = parseInt(quickKInput.value, 10) || 0;
             if (quickParams.Y > K && K > 0) {
@@ -409,15 +449,14 @@
             }
             recalculateQuickProbabilities();
         });
+        quickKNotInput.addEventListener('input', recalculateQuickProbabilities);
 
         document.getElementById('btnDecN').addEventListener('click', () => {
-            const val = Math.max(1, (parseInt(quickNInput.value, 10) || 40) - 1);
-            quickNInput.value = val;
+            quickNInput.value = Math.max(1, (parseInt(quickNInput.value, 10) || 40) - 1);
             recalculateQuickProbabilities();
         });
         document.getElementById('btnIncN').addEventListener('click', () => {
-            const val = (parseInt(quickNInput.value, 10) || 40) + 1;
-            quickNInput.value = val;
+            quickNInput.value = (parseInt(quickNInput.value, 10) || 40) + 1;
             recalculateQuickProbabilities();
         });
 
@@ -431,8 +470,7 @@
             recalculateQuickProbabilities();
         });
         document.getElementById('btnIncK').addEventListener('click', () => {
-            const val = (parseInt(quickKInput.value, 10) || 0) + 1;
-            quickKInput.value = val;
+            quickKInput.value = (parseInt(quickKInput.value, 10) || 0) + 1;
             recalculateQuickProbabilities();
         });
 
@@ -443,8 +481,28 @@
         });
         document.getElementById('btnIncY').addEventListener('click', () => {
             const K = parseInt(quickKInput.value, 10) || 0;
-            quickParams.Y = Math.min(K, quickParams.Y + 1);
+            quickParams.Y = Math.min(K || 1, quickParams.Y + 1);
             quickYValue.textContent = `${quickParams.Y} 枚`;
+            recalculateQuickProbabilities();
+        });
+
+        document.getElementById('btnDecKNot').addEventListener('click', () => {
+            quickKNotInput.value = Math.max(0, (parseInt(quickKNotInput.value, 10) || 0) - 1);
+            recalculateQuickProbabilities();
+        });
+        document.getElementById('btnIncKNot').addEventListener('click', () => {
+            quickKNotInput.value = (parseInt(quickKNotInput.value, 10) || 0) + 1;
+            recalculateQuickProbabilities();
+        });
+
+        document.getElementById('btnDecZ').addEventListener('click', () => {
+            quickParams.Z = Math.max(1, quickParams.Z - 1);
+            quickZValue.textContent = `${quickParams.Z} 枚未満`;
+            recalculateQuickProbabilities();
+        });
+        document.getElementById('btnIncZ').addEventListener('click', () => {
+            quickParams.Z = quickParams.Z + 1;
+            quickZValue.textContent = `${quickParams.Z} 枚未満`;
             recalculateQuickProbabilities();
         });
 
@@ -462,7 +520,7 @@
             recalculateQuickProbabilities();
         });
 
-        // --- 新規追加：目標確率からの逆算ロジック ---
+        // 目標確率からの逆算ロジック
         const revXInput = document.getElementById('revXInput');
         const revPInput = document.getElementById('revPInput');
         const calcRevKBtn = document.getElementById('calcRevKBtn');
@@ -472,15 +530,16 @@
             const N = Math.max(1, parseInt(quickNInput.value, 10) || 40);
             const X = Math.max(1, parseInt(revXInput.value, 10) || 7);
             const targetP = Math.max(0, Math.min(100, parseFloat(revPInput.value) || 80)) / 100;
+            const K_not = Math.max(0, parseInt(quickKNotInput.value, 10) || 0);
             const Y = quickParams.Y;
+            const Z = quickParams.Z;
             const type = quickParams.type;
 
             let foundK = -1;
             let foundProb = 0;
             
-            // Y枚引くには最低でも投入枚数KはY以上必要
-            for (let k = Y; k <= N; k++) {
-                let p = calculateHypergeometric(N, k, X, Y, type);
+            for (let k = Y; k <= (N - K_not); k++) {
+                let p = calculateMultivariateProbability(N, k, K_not, X, Y, Z, type);
                 if (p >= targetP) {
                     foundK = k;
                     foundProb = p;
@@ -498,6 +557,24 @@
             }
         });
 
+        // ③ 詳細表示チェック切り替えでリアルタイム更新
+        showDetailedCheck.addEventListener('change', () => {
+            renderMainDeck();
+            renderTerritoryDeck();
+        });
+
+        // ② 条件一括リセットボタン
+        resetConditionsBtn.addEventListener('click', () => {
+            Object.keys(state.conditions).forEach(id => {
+                state.conditions[id] = 'none';
+            });
+            quickKInput.value = 0;
+            quickKNotInput.value = 0;
+            quickCardNameLabel.textContent = "自由入力モード";
+            recalculateQuickProbabilities();
+            renderMainDeck();
+            updateStatusText();
+        });
 
         // --- 🛠️ 【表記揺れ標準キー変換】 ---
         function normalizeCardListId(rawId) {
@@ -529,7 +606,6 @@
             }
 
             if (num === 5039) {
-                console.log("🛠️ ワークアラウンド適用: デッキID 5039 (BP1-039) を BP1-038 に自動補正しました。");
                 return "BP1-38";
             }
 
@@ -546,7 +622,7 @@
             }
         }
 
-        // --- 起動時に 8つの JSON ファイルを非同期並行ロードして自動マージ ---
+        // JSONマスターデータの並行読込
         async function loadAllCardLists() {
             try {
                 const fileNames = [
@@ -568,7 +644,6 @@
                 `).join('');
 
                 let loadedCount = 0;
-                let successTotalCards = 0;
 
                 const fetchPromises = fileNames.map((file, idx) => {
                     const statusDiv = document.getElementById(`status-${idx}`);
@@ -590,20 +665,16 @@
                                 dot.classList.add('bg-emerald-500');
                                 statusDiv.querySelector('span:last-child').textContent = `${file} (${data.length}枚)`;
                             }
-
-                            successTotalCards += data.length;
                             return data;
                         })
                         .catch(err => {
                             loadedCount++;
                             loadProgressCount.textContent = `${loadedCount} / 8 files`;
-                            
                             if (statusDiv && dot) {
                                 statusDiv.classList.remove('text-slate-500', 'border-slate-800');
                                 statusDiv.classList.add('text-rose-400', 'border-rose-500/20', 'bg-rose-950/10');
                                 dot.classList.remove('bg-slate-700', 'animate-pulse');
                                 dot.classList.add('bg-rose-500');
-                                
                                 let errorMsg = window.location.protocol === 'file:' ? 'ローカル制限' : '読込失敗';
                                 statusDiv.querySelector('span:last-child').textContent = `${file} (${errorMsg})`;
                             }
@@ -627,16 +698,6 @@
                     bannerEmoji.classList.remove('animate-pulse');
                     bannerText.textContent = `データベース構築完了！全 ${state.cardMap.size} 枚のカードが紐付け可能です。`;
                     bannerText.className = 'font-bold text-emerald-400 text-sm';
-                } else {
-                    bannerEmoji.textContent = '🚨';
-                    bannerEmoji.classList.remove('animate-pulse');
-                    if (window.location.protocol === 'file:') {
-                        bannerText.textContent = `PC上で直接ファイルを起動しているため、ブラウザ制限によりマスターデータをロードできません。`;
-                        bannerText.className = 'font-bold text-rose-400 text-sm';
-                    } else {
-                        bannerText.textContent = `警告：サーバー上にJSONマスターファイルが見つからないか、中身にエラーがあります。`;
-                        bannerText.className = 'font-bold text-rose-400 text-sm';
-                    }
                 }
             } catch (globalErr) {
                 console.error("起動初期化例外発生:", globalErr);
@@ -656,7 +717,6 @@
                 trimmed = trimmed.replace(/,(\s*[}\]]*)$/, '$1');
                 let openBraces = (trimmed.match(/{/g) || []).length;
                 let closeBraces = (trimmed.match(/}/g) || []).length;
-                
                 if (openBraces > closeBraces) {
                     let repairedText = trimmed + '}'.repeat(openBraces - closeBraces);
                     try { return JSON.parse(repairedText); } catch (e) { throw firstError; }
@@ -666,7 +726,6 @@
         }
 
         let selectedFile = null;
-
         deckFileInput.addEventListener('change', (e) => {
             const files = e.target.files;
             if (files && files.length > 0) {
@@ -674,16 +733,11 @@
                 const reader = new FileReader();
                 reader.onload = function(evt) { deckJsonInput.value = evt.target.result; };
                 reader.readAsText(selectedFile);
-            } else {
-                selectedFile = null;
             }
         });
 
         loadTextBtn.addEventListener('click', () => {
-            if (!selectedFile) {
-                alert("ファイルが選択されていません。");
-                return;
-            }
+            if (!selectedFile) return alert("ファイルが選択されていません。");
             const reader = new FileReader();
             reader.onload = function(evt) {
                 deckJsonInput.value = evt.target.result;
@@ -709,12 +763,11 @@
                 state.conditions = {};
 
                 let mainTotal = 0;
-
                 if (deckData.mainDeck) {
                     Object.entries(deckData.mainDeck).forEach(([rawId, count]) => {
                         const normId = normalizeDeckId(rawId);
                         state.mainDeck[normId] = count;
-                        state.conditions[normId] = 'none'; // 初期状態はnone
+                        state.conditions[normId] = 'none';
                         mainTotal += count;
                     });
                 }
@@ -750,7 +803,7 @@
             if (mustAndCards.length > 0) text += `🟢 必須(AND): ${mustAndCards.join(', ')} `;
             if (mustOrCards.length > 0) text += `${text ? ' | ' : ''}🔵 必須(OR): ${mustOrCards.join(', ')} `;
             if (notCards.length > 0) text += `${text ? ' | ' : ''}🔴 不純物: ${notCards.join(', ')} `;
-            if (!text) text = "カードをクリックすると、上の特化確率テーブルに投入枚数が自動セットされます！";
+            if (!text) text = "カードをクリックすると、確率計算機に自動連動します！";
             simStatusText.textContent = text;
         }
 
@@ -842,35 +895,35 @@
                     `;
                 }
 
-                // --- クリック時の状態遷移とOR連動 ---
+                // クリック時の状態遷移 (none -> must_and -> must_or -> not)
                 cardNode.addEventListener('click', () => {
-                    // 状態遷移 (none -> must_and -> must_or -> not)
                     if (cond === 'none') state.conditions[cardId] = 'must_and';
                     else if (cond === 'must_and') state.conditions[cardId] = 'must_or';
                     else if (cond === 'must_or') state.conditions[cardId] = 'not';
                     else state.conditions[cardId] = 'none';
 
-                    // OR指定カードの枚数集計
+                    // OR/不純物の自動集計
                     let orCount = 0;
+                    let notCount = 0;
                     let orNames = [];
+
                     Object.entries(state.conditions).forEach(([cId, cType]) => {
                         if (cType === 'must_or') {
                             orCount += state.mainDeck[cId];
                             const c = state.cardMap.get(cId);
                             orNames.push(c ? c.name : cleanDisplayId(c, cId));
+                        } else if (cType === 'not') {
+                            notCount += state.mainDeck[cId];
                         }
                     });
 
-                    // 特化計算機への連動
                     let mainTotal = 0;
                     Object.values(state.mainDeck).forEach(c => mainTotal += c);
                     quickNInput.value = mainTotal || 40;
 
                     if (orCount > 0) {
                         quickKInput.value = orCount;
-                        quickCardNameLabel.textContent = `OR合計: ${orNames.join(', ')}`;
-                        
-                        // YがKを超えないように調整
+                        quickCardNameLabel.textContent = `OR: ${orNames.join(', ')}`;
                         if (quickParams.Y > orCount) {
                             quickParams.Y = Math.max(1, orCount);
                             quickYValue.textContent = `${quickParams.Y} 枚`;
@@ -878,6 +931,8 @@
                     } else {
                         quickCardNameLabel.textContent = `自由入力モード`;
                     }
+
+                    quickKNotInput.value = notCount;
 
                     recalculateQuickProbabilities();
                     renderMainDeck();
@@ -889,6 +944,7 @@
             mainDeckCountEl.textContent = `(${totalCount}枚)`;
         }
 
+        // ① 領土デッキの表示修正（ファスト領土判定の改善）
         function renderTerritoryDeck() {
             territoryDeckGrid.innerHTML = '';
             let totalCount = 0;
@@ -905,17 +961,21 @@
                     let typeBadge = '';
                     let borderHighlight = 'hover:border-blue-500';
                     
-                    if (card.species === '基礎') {
-                        typeBadge = `<span class="px-1.5 py-0.5 bg-slate-800 text-slate-300 text-[9px] font-bold rounded border border-slate-700">⛰️ 基礎</span>`;
-                    } else if (card.species === '夜') {
-                        typeBadge = `<span class="px-1.5 py-0.5 bg-indigo-950/40 text-indigo-300 text-[9px] font-bold rounded border border-indigo-800/30">🌙 夜</span>`;
-                        borderHighlight = 'hover:border-indigo-500';
-                    } else if (card.species === '占術') {
-                        typeBadge = `<span class="px-1.5 py-0.5 bg-purple-950/40 text-purple-300 text-[9px] font-bold rounded border border-purple-800/30">👁️ 占術</span>`;
-                        borderHighlight = 'hover:border-purple-500';
-                    } else if (card.species === 'ファスト') {
-                        typeBadge = `<span class="px-1.5 py-0.5 bg-amber-950/40 text-amber-300 text-[9px] font-bold rounded border border-amber-800/30">⚡ 2色ファスト</span>`;
+                    // ① 種族または2色属性によるファスト/夜/占術領土の厳密判定
+                    const isTwoColor = card.conditions && card.conditions.length >= 2;
+                    const speciesStr = card.species || '';
+
+                    if (speciesStr.includes('ファスト') || (isTwoColor && !speciesStr.includes('基礎'))) {
+                        typeBadge = `<span class="px-1.5 py-0.5 bg-amber-950/60 text-amber-300 text-[9px] font-bold rounded border border-amber-500/40">⚡ 2色ファスト</span>`;
                         borderHighlight = 'hover:border-amber-500';
+                    } else if (speciesStr.includes('夜')) {
+                        typeBadge = `<span class="px-1.5 py-0.5 bg-indigo-950/60 text-indigo-300 text-[9px] font-bold rounded border border-indigo-500/40">🌙 夜</span>`;
+                        borderHighlight = 'hover:border-indigo-500';
+                    } else if (speciesStr.includes('占術') || card.scry) {
+                        typeBadge = `<span class="px-1.5 py-0.5 bg-purple-950/60 text-purple-300 text-[9px] font-bold rounded border border-purple-500/40">👁️ 占術</span>`;
+                        borderHighlight = 'hover:border-purple-500';
+                    } else if (speciesStr.includes('基礎')) {
+                        typeBadge = `<span class="px-1.5 py-0.5 bg-slate-800 text-slate-300 text-[9px] font-bold rounded border border-slate-700">⛰️ 基礎</span>`;
                     } else {
                         typeBadge = `<span class="px-1.5 py-0.5 bg-slate-800 text-slate-400 text-[9px] font-bold rounded border border-slate-700">領土</span>`;
                     }
@@ -929,7 +989,7 @@
                             </div>
                             <div class="my-2">
                                 <h3 class="text-xs font-bold text-slate-200 group-hover:text-blue-300 transition-colors">${card.name}</h3>
-                                <p class="text-[9px] text-slate-500 mt-1">供給属性: <span class="font-mono text-emerald-400 font-bold">${card.conditions}</span></p>
+                                <p class="text-[9px] text-slate-500 mt-1">供給属性: <span class="font-mono text-emerald-400 font-bold">${card.conditions || '無'}</span></p>
                             </div>
                             <div class="flex justify-between items-center text-[10px] mt-1 pt-1 border-t border-slate-900">
                                 <span class="text-blue-400 font-mono">${card.scry ? '👁️占術あり (デッキ底操作)' : '⛰️通常領土'}</span>
@@ -1018,14 +1078,14 @@
             return needed;
         }
 
-        // --- シミュレーションコア ---
+        // シミュレーション実行
         runSimulationBtn.addEventListener('click', () => {
             const runs = parseInt(simRunsSelect.value, 10);
             const mustIds = Object.entries(state.conditions).filter(([_, type]) => type === 'must_and').map(([id]) => id);
             const notIds = Object.entries(state.conditions).filter(([_, type]) => type === 'not').map(([id]) => id);
 
             if (mustIds.length === 0) {
-                alert("初手からプレイする『必須(AND)』カード(緑枠)を少なくとも1枚指定してください。\n※シミュレーターはAND条件を基準に稼働します。");
+                alert("初手からプレイする『必須(AND)』カード(緑枠)を少なくとも1枚指定してください。");
                 return;
             }
 
