@@ -27,7 +27,7 @@
 <body class="min-h-screen flex flex-col justify-between">
 
     <!-- ヘッダー -->
-    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
+    <header class="border-b border-slate-800 bg-slate-900/85 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <h1 class="text-xl font-bold text-emerald-400 flex items-center gap-2">
                 🐾 アニマルカードゲーム Web確率計算機
@@ -71,22 +71,13 @@
                 <span class="text-xs text-slate-400">▼ 展開/折りたたむ</span>
             </summary>
 
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-2">
-                <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
-                    <input type="checkbox" id="showDetailedCheck" class="w-4 h-4 rounded text-emerald-500 bg-slate-900 border-slate-800 focus:ring-emerald-500 focus:ring-offset-slate-950 cursor-pointer">
-                    <label for="showDetailedCheck" class="text-xs font-bold text-slate-300 cursor-pointer select-none">
-                        👁️ 全カードの詳細・能力テキストを表示
-                    </label>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center pt-2">
                 <div>
                     <label class="block text-xs font-bold text-slate-400 mb-2">① デッキJSONファイルを選択して自動展開</label>
                     <input type="file" id="deckFileInput" accept=".json" 
                         class="block w-full text-xs text-slate-400 file:mr-3 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700 cursor-pointer border border-slate-800 p-1.5 rounded-lg bg-slate-950">
                 </div>
-                <!-- 内部処理専用テキストボックス（ユーザーには非表示） -->
+                <!-- 内部処理専用テキストボックス -->
                 <div>
                     <textarea id="deckJsonInput" rows="1" class="hidden"></textarea>
                     <div class="text-xs text-slate-400 bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center gap-2">
@@ -97,7 +88,7 @@
             </div>
         </details>
 
-        <!-- 3. デッキ展開表示エリア (移動完了) -->
+        <!-- 3. デッキ展開表示エリア -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <details class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl" open>
                 <summary class="flex justify-between items-center cursor-pointer select-none border-b border-slate-800 pb-2 mb-4">
@@ -106,13 +97,20 @@
                     </h2>
                     <span class="text-xs text-slate-400">▼ 展開/折りたたむ</span>
                 </summary>
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
                     <div class="flex items-center gap-3">
-                        <button id="resetConditionsBtn" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2.5 py-1 rounded border border-slate-700 transition-colors">
+                        <!-- 要望①：テキスト表示チェックボックスを「条件リセット」の左側に移動 -->
+                        <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                            <input type="checkbox" id="showDetailedCheck" class="w-4 h-4 rounded text-emerald-500 bg-slate-900 border-slate-800 focus:ring-emerald-500 focus:ring-offset-slate-950 cursor-pointer">
+                            <label for="showDetailedCheck" class="text-xs font-bold text-slate-300 cursor-pointer select-none">
+                                👁️ 全カードの詳細・能力テキストを表示
+                            </label>
+                        </div>
+                        <button id="resetConditionsBtn" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2.5 py-1.5 rounded border border-slate-700 transition-colors">
                             🔄 条件リセット
                         </button>
-                        <span class="text-[10px] text-slate-400">💡 カードクリックで判定条件を切替</span>
                     </div>
+                    <span class="text-[10px] text-slate-400">💡 カードクリックで判定条件を切替</span>
                 </div>
                 <div id="mainDeckGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     <p class="col-span-full text-center text-slate-500 py-12 text-sm font-bold">デッキJSONファイルをインポートしてください。</p>
@@ -153,7 +151,25 @@
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
                 <!-- パラメータ調整エリア -->
                 <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-4">
-                    <p class="text-xs font-bold text-slate-300 border-b border-slate-800/60 pb-1.5 flex justify-between">
+                    
+                    <!-- 要望③：目標確率からの逆算を独立させ、パラメータの前に配置。またデッキ全体の枚数調整を追加 -->
+                    <div class="space-y-1.5 pb-3 border-b border-slate-800/80">
+                        <label class="block text-[11px] font-bold text-indigo-300">🔍 目標確率から最低投入枚数を逆算</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] text-slate-400">引く枚数(X)</label>
+                                <input type="number" id="revXInput" value="7" min="1" max="100" class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-center text-emerald-400 font-mono focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-slate-400">目標確率(%)</label>
+                                <input type="number" id="revPInput" value="80" min="1" max="100" class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-center text-emerald-400 font-mono focus:outline-none">
+                            </div>
+                        </div>
+                        <button id="calcRevKBtn" class="w-full mt-1 py-1.5 bg-indigo-600/60 hover:bg-indigo-500 border border-indigo-500/50 text-indigo-100 font-bold rounded text-xs transition-all">最低投入枚数を計算</button>
+                        <div id="revResult" class="hidden"></div>
+                    </div>
+
+                    <p class="text-xs font-bold text-slate-300 pb-0.5 flex justify-between">
                         <span>⚙️ 計算パラメータ</span>
                         <span id="quickCardNameLabel" class="text-indigo-400 truncate max-w-[130px] font-sans">自由入力モード</span>
                     </p>
@@ -209,23 +225,6 @@
                         </div>
                     </div>
 
-                    <!-- 目標確率からの逆算 -->
-                    <div class="space-y-1.5 pt-3 border-t border-slate-800/60 mt-3">
-                        <label class="block text-[11px] font-bold text-indigo-300">🔍 目標確率から最低投入枚数を逆算</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="block text-[10px] text-slate-400">引く枚数(X)</label>
-                                <input type="number" id="revXInput" value="7" min="1" max="100" class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-center text-emerald-400 font-mono focus:outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] text-slate-400">目標確率(%)</label>
-                                <input type="number" id="revPInput" value="80" min="1" max="100" class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-center text-emerald-400 font-mono focus:outline-none">
-                            </div>
-                        </div>
-                        <button id="calcRevKBtn" class="w-full mt-1 py-1.5 bg-indigo-600/60 hover:bg-indigo-500 border border-indigo-500/50 text-indigo-100 font-bold rounded text-xs transition-all">最低投入枚数を計算</button>
-                        <div id="revResult" class="hidden"></div>
-                    </div>
-
                 </div>
 
                 <!-- 確率一覧テーブル -->
@@ -278,7 +277,7 @@
             </div>
             
             <p class="text-xs text-slate-400 leading-relaxed">
-                領土デッキに投入されている各条件（平野・山岳・水生・森林）に基づき、<span class="text-blue-300 font-bold">占術特性（不要な領土のボトム送り）を加味したモンテカルロシミュレーション</span>により、ターン別の到達確率を算出します。
+                領土デッキに投入されている各条件に基づき、<span class="text-blue-300 font-bold">占術特性（不要な領土のボトム送り）を加味したモンテカルロシミュレーション</span>により、ターン別の到達確率を算出します。
             </p>
 
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
@@ -297,6 +296,8 @@
                                 <option value="山岳">山岳条件</option>
                                 <option value="水生">水生条件</option>
                                 <option value="森林">森林条件</option>
+                                <!-- 要望④：森林条件の下に「夜条件（未実装）」を追加 -->
+                                <option value="夜">夜条件（未実装）</option>
                             </select>
                         </div>
                         <div class="space-y-1.5">
@@ -312,7 +313,7 @@
                     <!-- 複数条件カスタム指定モード用 -->
                     <div id="comboTerritoryControl" class="hidden space-y-3">
                         <div class="text-[11px] text-slate-400 leading-relaxed">
-                            各条件の必要枚数を指定してください（例: 平野1, 山岳2など）。
+                            各条件の必要枚数を指定してください。
                         </div>
                         <div class="space-y-2">
                             <div class="flex justify-between items-center text-xs">
@@ -331,10 +332,15 @@
                                 <span class="text-slate-300">森林条件</span>
                                 <input type="number" id="reqShinrin" value="0" min="0" max="10" class="w-14 bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-center text-blue-400 font-mono text-xs">
                             </div>
+                            <!-- 要望④：複数条件モード側でも森林条件の下に「夜条件（未実装）」を追加 -->
+                            <div class="flex justify-between items-center text-xs pt-1 border-t border-slate-800/80">
+                                <span class="text-indigo-300">夜条件（未実装）</span>
+                                <input type="number" id="reqYoru" value="0" min="0" max="10" class="w-14 bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-center text-indigo-400 font-mono text-xs">
+                            </div>
                         </div>
                     </div>
 
-                    <!-- 領土シミュレーション用試行回数セレクトを追加 -->
+                    <!-- 領土シミュレーション用試行回数セレクト -->
                     <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
                         <label class="block text-[11px] font-bold text-slate-400">🎯 領土シミュレーション試行回数</label>
                         <select id="territorySimRuns" class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-blue-300 font-mono focus:outline-none">
@@ -462,7 +468,7 @@
         let quickParams = {
             N: 40,
             K: 3,
-            Y: 1,
+            Y: 1, // 要望②：初期値は1を維持
             K_not: 0,
             Z: 3
         };
@@ -564,14 +570,16 @@
         }
 
         quickNInput.addEventListener('input', recalculateQuickProbabilities);
+        
+        // 要望②：K（目標カードの投入枚数）が変わっても、ユーザーが意図的に0としない限りYを勝手に0にしない
         quickKInput.addEventListener('input', () => {
             const K = parseInt(quickKInput.value, 10) || 0;
-            if (quickParams.Y > K && K > 0) {
-                quickParams.Y = Math.max(1, K);
+            if (K > 0 && quickParams.Y === 0) {
+                quickParams.Y = 1;
                 quickYValue.textContent = `${quickParams.Y} 枚`;
-            } else if (K === 0) {
-                quickParams.Y = 0;
-                quickYValue.textContent = `0 枚`;
+            } else if (quickParams.Y > K && K > 0) {
+                quickParams.Y = K;
+                quickYValue.textContent = `${quickParams.Y} 枚`;
             }
             recalculateQuickProbabilities();
         });
@@ -589,10 +597,7 @@
         document.getElementById('btnDecK').addEventListener('click', () => {
             const val = Math.max(0, (parseInt(quickKInput.value, 10) || 0) - 1);
             quickKInput.value = val;
-            if (val === 0) {
-                quickParams.Y = 0;
-                quickYValue.textContent = `0 枚`;
-            } else if (quickParams.Y > val) {
+            if (val > 0 && quickParams.Y > val) {
                 quickParams.Y = val;
                 quickYValue.textContent = `${quickParams.Y} 枚`;
             }
@@ -608,16 +613,18 @@
             recalculateQuickProbabilities();
         });
 
+        // 要望②：Yのマイナスボタン（ユーザーの意図的な操作以外では0にしない制御）
         document.getElementById('btnDecY').addEventListener('click', () => {
-            const K = parseInt(quickKInput.value, 10) || 0;
-            const minY = K === 0 ? 0 : 1;
-            quickParams.Y = Math.max(minY, quickParams.Y - 1);
-            quickYValue.textContent = `${quickParams.Y} 枚`;
-            recalculateQuickProbabilities();
+            if (quickParams.Y > 0) {
+                quickParams.Y = quickParams.Y - 1;
+                quickYValue.textContent = `${quickParams.Y} 枚`;
+                recalculateQuickProbabilities();
+            }
         });
         document.getElementById('btnIncY').addEventListener('click', () => {
             const K = parseInt(quickKInput.value, 10) || 0;
-            quickParams.Y = Math.min(K || 0, quickParams.Y + 1);
+            const maxY = K > 0 ? K : 10;
+            quickParams.Y = Math.min(maxY, quickParams.Y + 1);
             quickYValue.textContent = `${quickParams.Y} 枚`;
             recalculateQuickProbabilities();
         });
@@ -693,7 +700,7 @@
         function normalizeConditionString(cond) {
             if (!cond) return "";
             let s = cond.toString().trim();
-            const map = { '平': '平野', '山': '山岳', '水': '水生', '森': '森林' };
+            const map = { '平': '平野', '山': '山岳', '水': '水生', '森': '森林', '夜': '夜' };
             let result = "";
             for (let i = 0; i < s.length; i++) {
                 let char = s[i];
@@ -830,7 +837,8 @@
                     '平野': parseInt(document.getElementById('reqHirano').value, 10) || 0,
                     '山岳': parseInt(document.getElementById('reqSangaku').value, 10) || 0,
                     '水生': parseInt(document.getElementById('reqSuisei').value, 10) || 0,
-                    '森林': parseInt(document.getElementById('reqShinrin').value, 10) || 0
+                    '森林': parseInt(document.getElementById('reqShinrin').value, 10) || 0,
+                    '夜': parseInt(document.getElementById('reqYoru').value, 10) || 0
                 };
 
                 territoryTableTitle.textContent = `📈 複数条件カスタム指定のターン別達成確率`;
@@ -847,11 +855,11 @@
                             activeLands.push(land);
                         }
 
-                        let counts = { '平野': 0, '山岳': 0, '水生': 0, '森林': 0 };
+                        let counts = { '平野': 0, '山岳': 0, '水生': 0, '森林': 0, '夜': 0 };
                         activeLands.forEach(l => {
                             let norm = l.normalizedConditions || normalizeConditionString(l.conditions);
                             if (norm) {
-                                ['平野', '山岳', '水生', '森林'].forEach(attr => {
+                                ['平野', '山岳', '水生', '森林', '夜'].forEach(attr => {
                                     if (norm.includes(attr)) counts[attr]++;
                                 });
                             }
@@ -902,8 +910,8 @@
             });
             quickKInput.value = 0;
             quickKNotInput.value = 0;
-            quickParams.Y = 0;
-            quickYValue.textContent = "0 枚";
+            quickParams.Y = 1; // リセット時もデフォルト1以上を保持
+            quickYValue.textContent = "1 枚";
             quickCardNameLabel.textContent = "自由入力モード (必須0枚)";
             recalculateQuickProbabilities();
             renderMainDeck();
@@ -1095,6 +1103,7 @@
                     });
                 }
 
+                // 要望③：デッキを読み込んだら、超几何分布計算機のデッキ総枚数(N)にその総枚数を自動反映する（初期値40対応）
                 if (mainTotal > 0) {
                     quickNInput.value = mainTotal;
                     recalculateQuickProbabilities();
@@ -1242,14 +1251,15 @@
                     if (orCount > 0) {
                         quickKInput.value = orCount;
                         quickCardNameLabel.textContent = `OR: ${orNames.join(', ')}`;
-                        if (quickParams.Y > orCount) {
-                            quickParams.Y = Math.max(1, orCount);
+                        if (quickParams.Y === 0) {
+                            quickParams.Y = 1;
+                            quickYValue.textContent = `${quickParams.Y} 枚`;
+                        } else if (quickParams.Y > orCount) {
+                            quickParams.Y = orCount;
                             quickYValue.textContent = `${quickParams.Y} 枚`;
                         }
                     } else {
                         quickKInput.value = 0;
-                        quickParams.Y = 0;
-                        quickYValue.textContent = `0 枚`;
                         quickCardNameLabel.textContent = `自由入力モード (必須0枚)`;
                     }
 
