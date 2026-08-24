@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アニマルカードゲーム Web確率計算機 ver 0.2608260239</title>
+    <title>アニマルカードゲーム Web確率計算機 ver 0.2608260245</title>
     <!-- Tailwind CSS & Chart.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -32,7 +32,7 @@
             <h1 class="text-xl font-bold text-emerald-400 flex items-center gap-2">
                 🐾 アニマルカードゲーム Web確率計算機
                 <span class="text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono">
-                    ver 0.2608260239
+                    ver 0.2608260245
                 </span>
             </h1>
             <span class="text-xs bg-slate-800 text-slate-400 px-3 py-1 rounded-full border border-slate-700 font-mono hidden sm:inline">
@@ -88,47 +88,53 @@
             </div>
         </details>
 
-        <!-- 3. デッキ展開表示エリア -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <details class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl" open>
-                <summary class="flex justify-between items-center cursor-pointer select-none border-b border-slate-800 pb-2 mb-4">
-                    <h2 class="text-base font-bold text-emerald-300">
-                        🃏 メインデッキ <span id="mainDeckCount" class="text-sm font-normal text-slate-400">(0枚)</span>
-                    </h2>
-                    <span class="text-xs text-slate-400">▼ 展開/折りたたむ</span>
-                </summary>
-                <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
-                    <div class="flex items-center gap-3">
-                        <!-- 要望①：テキスト表示チェックボックスを「条件リセット」の左側に移動 -->
-                        <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
-                            <input type="checkbox" id="showDetailedCheck" class="w-4 h-4 rounded text-emerald-500 bg-slate-900 border-slate-800 focus:ring-emerald-500 focus:ring-offset-slate-950 cursor-pointer">
-                            <label for="showDetailedCheck" class="text-xs font-bold text-slate-300 cursor-pointer select-none">
-                                👁️ 全カードの詳細・能力テキストを表示
-                            </label>
-                        </div>
-                        <button id="resetConditionsBtn" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2.5 py-1.5 rounded border border-slate-700 transition-colors">
-                            🔄 条件リセット
-                        </button>
+        <!-- 3. デッキ展開表示エリア（要望①：親のdetailsで同時に展開／折りたたみ） -->
+        <details class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4" open>
+            <summary class="flex justify-between items-center cursor-pointer select-none border-b border-slate-800 pb-2">
+                <h2 class="text-base font-bold text-emerald-300 flex items-center gap-2">
+                    🃏 デッキ展開表示
+                </h2>
+                <span class="text-xs text-slate-400">▼ 一括 展開/折りたたむ</span>
+            </summary>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
+                <div class="lg:col-span-2 bg-slate-950 border border-slate-800/80 rounded-xl p-4 shadow-inner">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-4">
+                        <h3 class="text-sm font-bold text-emerald-300">
+                            🃏 基礎デッキ <span id="mainDeckCount" class="text-xs font-normal text-slate-400">(0枚)</span>
+                        </h3>
                     </div>
-                    <span class="text-[10px] text-slate-400">💡 カードクリックで判定条件を切替</span>
+                    <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
+                                <input type="checkbox" id="showDetailedCheck" class="w-4 h-4 rounded text-emerald-500 bg-slate-950 border-slate-800 focus:ring-emerald-500 focus:ring-offset-slate-900 cursor-pointer">
+                                <label for="showDetailedCheck" class="text-xs font-bold text-slate-300 cursor-pointer select-none">
+                                    👁️ 全カードの詳細・能力テキストを表示
+                                </label>
+                            </div>
+                            <button id="resetConditionsBtn" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2.5 py-1.5 rounded border border-slate-700 transition-colors">
+                                🔄 条件リセット
+                            </button>
+                        </div>
+                        <span class="text-[10px] text-slate-400">💡 カードクリックで判定条件を切替</span>
+                    </div>
+                    <div id="mainDeckGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        <p class="col-span-full text-center text-slate-500 py-12 text-sm font-bold">デッキJSONファイルをインポートしてください。</p>
+                    </div>
                 </div>
-                <div id="mainDeckGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    <p class="col-span-full text-center text-slate-500 py-12 text-sm font-bold">デッキJSONファイルをインポートしてください。</p>
-                </div>
-            </details>
 
-            <details class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl" open>
-                <summary class="flex justify-between items-center cursor-pointer select-none border-b border-slate-800 pb-2 mb-4">
-                    <h2 class="text-base font-bold text-blue-300">
-                        ⛰️ 領土デッキ <span id="territoryDeckCount" class="text-sm font-normal text-slate-400">(0枚)</span>
-                    </h2>
-                    <span class="text-xs text-slate-400">▼ 展開/折りたたむ</span>
-                </summary>
-                <div id="territoryDeckGrid" class="grid grid-cols-2 gap-4">
-                    <p class="col-span-full text-center text-slate-500 py-12 text-sm">領土デッキが表示されます。</p>
+                <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-4 shadow-inner">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-4">
+                        <h3 class="text-sm font-bold text-blue-300">
+                            ⛰️ 領土デッキ <span id="territoryDeckCount" class="text-xs font-normal text-slate-400">(0枚)</span>
+                        </h3>
+                    </div>
+                    <div id="territoryDeckGrid" class="grid grid-cols-2 gap-4">
+                        <p class="col-span-full text-center text-slate-500 py-12 text-sm">領土デッキが表示されます。</p>
+                    </div>
                 </div>
-            </details>
-        </div>
+            </div>
+        </details>
 
         <!-- 📊 【特化機能】超幾何分布・ドロー確率特化計算機 -->
         <details class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
@@ -701,13 +707,14 @@
         function normalizeConditionString(cond) {
             if (!cond) return "";
             let s = cond.toString().trim();
-            const map = { '平': '平野', '山': '山岳', '水': '水生', '森': '森林', '夜': '夜' };
+            // 要望②：略称の1文字（平・山・水・森）へ変換するマッピング
+            const map = { '平野': '平', '山岳': '山', '水生': '水', '森林': '森', '平': '平', '山': '山', '水': '水', '森': '森', '夜': '夜' };
             let result = "";
             for (let i = 0; i < s.length; i++) {
                 let char = s[i];
                 result += map[char] || char;
             }
-            result = result.replace(/水域/g, '水生');
+            result = result.replace(/水域/g, '水');
             return result;
         }
 
@@ -753,7 +760,7 @@
                     id: 'DUMMY-L', 
                     name: 'ダミー領土', 
                     conditions: '平', 
-                    normalizedConditions: '平野',
+                    normalizedConditions: '平',
                     scry: false 
                 });
             }
@@ -768,10 +775,10 @@
             const currentMode = territoryModeSelect.value;
 
             if (currentMode === 'single') {
-                const selectedAttr = targetAttributeSelect.value || '平野';
+                const selectedAttr = normalizeConditionString(targetAttributeSelect.value || '平野');
                 const requiredY = territoryYCount;
 
-                territoryTableTitle.textContent = `📈 ターン別・領土「${selectedAttr}条件」到達確率 (${requiredY}枚以上)`;
+                territoryTableTitle.textContent = `📈 ターン別・領土「${targetAttributeSelect.value}条件」到達確率 (${requiredY}枚以上)`;
 
                 let successCounts = Array(maxTurn).fill(0);
 
@@ -835,10 +842,10 @@
 
             } else {
                 const reqs = {
-                    '平野': parseInt(document.getElementById('reqHirano').value, 10) || 0,
-                    '山岳': parseInt(document.getElementById('reqSangaku').value, 10) || 0,
-                    '水生': parseInt(document.getElementById('reqSuisei').value, 10) || 0,
-                    '森林': parseInt(document.getElementById('reqShinrin').value, 10) || 0,
+                    '平': parseInt(document.getElementById('reqHirano').value, 10) || 0,
+                    '山': parseInt(document.getElementById('reqSangaku').value, 10) || 0,
+                    '水': parseInt(document.getElementById('reqSuisei').value, 10) || 0,
+                    '森': parseInt(document.getElementById('reqShinrin').value, 10) || 0,
                     '夜': parseInt(document.getElementById('reqYoru').value, 10) || 0
                 };
 
@@ -856,11 +863,11 @@
                             activeLands.push(land);
                         }
 
-                        let counts = { '平野': 0, '山岳': 0, '水生': 0, '森林': 0, '夜': 0 };
+                        let counts = { '平': 0, '山': 0, '水': 0, '森': 0, '夜': 0 };
                         activeLands.forEach(l => {
                             let norm = l.normalizedConditions || normalizeConditionString(l.conditions);
                             if (norm) {
-                                ['平野', '山岳', '水生', '森林', '夜'].forEach(attr => {
+                                ['平', '山', '水', '森', '夜'].forEach(attr => {
                                     if (norm.includes(attr)) counts[attr]++;
                                 });
                             }
@@ -1153,7 +1160,7 @@
                 const cond = state.conditions[cardId] || 'none';
                 
                 let borderClass = 'border-slate-800 hover:border-slate-600';
-                let bgClass = 'bg-slate-950';
+                let bgClass = 'bg-slate-900';
                 let badgeHtml = '';
 
                 if (cond === 'must_and') {
@@ -1185,7 +1192,7 @@
                             <div class="flex justify-between items-start">
                                 <span class="text-[10px] text-slate-500 font-mono">${displayId}</span>
                                 <div class="flex items-center gap-1">
-                                    ${displayConditions ? `<span class="px-1 text-[9px] bg-slate-800 text-yellow-400 font-bold rounded border border-slate-700">${displayConditions}</span>` : ''}
+                                    ${displayConditions ? `<span class="px-1 text-[9px] bg-slate-950 text-yellow-400 font-bold rounded border border-slate-800">${displayConditions}</span>` : ''}
                                     <span class="w-5 h-5 flex items-center justify-center rounded-full bg-emerald-950 border border-emerald-500 text-[10px] text-emerald-300 font-extrabold">${card.cost}</span>
                                 </div>
                             </div>
@@ -1308,13 +1315,13 @@
                         typeBadge = `<span class="px-1.5 py-0.5 bg-purple-950/60 text-purple-300 text-[9px] font-bold rounded border border-purple-500/40">👁️ 占術</span>`;
                         borderHighlight = 'hover:border-purple-500';
                     } else if (speciesStr.includes('基礎')) {
-                        typeBadge = `<span class="px-1.5 py-0.5 bg-slate-800 text-slate-300 text-[9px] font-bold rounded border border-slate-700">⛰️ 基礎</span>`;
+                        typeBadge = `<span class="px-1.5 py-0.5 bg-slate-900 text-slate-300 text-[9px] font-bold rounded border border-slate-800">⛰️ 基礎</span>`;
                     } else {
-                        typeBadge = `<span class="px-1.5 py-0.5 bg-slate-800 text-slate-400 text-[9px] font-bold rounded border border-slate-700">領土</span>`;
+                        typeBadge = `<span class="px-1.5 py-0.5 bg-slate-900 text-slate-400 text-[9px] font-bold rounded border border-slate-800">領土</span>`;
                     }
 
                     if (isDetailed) {
-                        cardNode.className = `relative group bg-slate-950 border border-slate-800 rounded-xl p-4 ${borderHighlight} hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[145px]`;
+                        cardNode.className = `relative group bg-slate-900 border border-slate-800 rounded-xl p-4 ${borderHighlight} hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[145px]`;
                         cardNode.innerHTML = `
                             <div class="flex justify-between items-start">
                                 <span class="text-[10px] text-slate-500 font-mono">${displayId}</span>
@@ -1324,13 +1331,13 @@
                                 <h3 class="text-xs font-bold text-slate-200 group-hover:text-blue-300 transition-colors">${card.name}</h3>
                                 <p class="text-[9px] text-slate-500 mt-1">供給条件: <span class="font-mono text-emerald-400 font-bold">${normConds || '無'}</span></p>
                             </div>
-                            <div class="flex justify-between items-center text-[10px] mt-1 pt-1 border-t border-slate-900">
+                            <div class="flex justify-between items-center text-[10px] mt-1 pt-1 border-t border-slate-950">
                                 <span class="text-blue-400 font-mono">${card.scry ? '👁️占術あり (デッキ底操作)' : '⛰️通常領土'}</span>
                                 <span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full font-bold">${count}枚</span>
                             </div>
                         `;
                     } else {
-                        cardNode.className = `relative group bg-slate-950 border border-slate-800 rounded-xl p-3 ${borderHighlight} hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[80px]`;
+                        cardNode.className = `relative group bg-slate-900 border border-slate-800 rounded-xl p-3 ${borderHighlight} hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[80px]`;
                         cardNode.innerHTML = `
                             <div class="flex justify-between items-start">
                                 <span class="text-[10px] text-slate-500 font-mono">${displayId}</span>
@@ -1342,7 +1349,7 @@
                         `;
                     }
                 } else {
-                    cardNode.className = 'relative bg-slate-950 border border-rose-950 rounded-xl p-3 flex flex-col justify-between min-h-[80px]';
+                    cardNode.className = 'relative bg-slate-900 border border-rose-950 rounded-xl p-3 flex flex-col justify-between min-h-[80px]';
                     cardNode.innerHTML = `
                         <div class="flex justify-between items-start">
                             <span class="text-[10px] text-rose-500 font-mono">${displayId}</span>
@@ -1500,7 +1507,7 @@
                                 activeTerritories.forEach(land => {
                                     let landNorm = land.normalizedConditions || normalizeConditionString(land.conditions);
                                     const isTwoColor = landNorm && landNorm.length >= 2;
-                                    const isMoveIn = isTwoColor && T >= 3 && land.turnPlayed === T;
+                                    const isMoveIn = isTwoCode && T >= 3 && land.turnPlayed === T; // 修正済みの変数名
                                     if (!isMoveIn) availCost += 1;
                                 });
                                 let costMet = availCost >= card.cost;
